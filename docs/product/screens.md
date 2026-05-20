@@ -227,6 +227,7 @@ Primary actions:
 
 - Choose physical supermarket shopping.
 - Choose online shopping.
+- Request location permission after physical shopping is chosen.
 - Go back to the selected list.
 - Cancel session setup.
 
@@ -240,13 +241,16 @@ Data shown:
 States:
 
 - Physical option selected.
+- Physical option selected and location permission request pending.
 - Online option selected.
 - No context selected.
 
 Validation:
 
 - The user must choose physical or online before continuing.
-- Physical shopping proceeds to supermarket confirmation and may request geolocation.
+- After the user chooses physical shopping, the prototype requests location permission before entering Supermarket Confirmation.
+- If location permission is granted, Supermarket Confirmation opens with detected candidates when available.
+- If location permission is denied, unavailable, or imprecise, Supermarket Confirmation opens in the documented manual or degraded location states.
 - Online shopping skips geolocation and physical layout screens.
 
 ## Supermarket Confirmation
@@ -259,8 +263,16 @@ Primary actions:
 - Choose from multiple possible supermarket matches.
 - Search existing supermarkets.
 - Create a new supermarket.
+- Save a new supermarket.
+- Cancel new supermarket creation.
 - Continue without location by manually choosing a supermarket.
 - Cancel physical session setup.
+
+Fields:
+
+- New supermarket name.
+- New supermarket address label.
+- Detection radius.
 
 Data shown:
 
@@ -269,6 +281,7 @@ Data shown:
 - Distance from current location.
 - Detection confidence or match quality.
 - Detection radius when relevant.
+- Detected latitude and longitude when available.
 - Existing supermarket search results.
 
 States:
@@ -287,6 +300,10 @@ Validation:
 - A physical session requires a confirmed supermarket before layout contributions are recorded.
 - If location is denied or imprecise, the user can choose an existing supermarket, create one, or cancel.
 - Ambiguous detection requires explicit user choice.
+- New supermarket name is required before saving.
+- New supermarket address label is optional in the prototype but should be shown when entered or detected.
+- Detection radius must be a positive distance value when entered or shown.
+- Detected latitude and longitude are read-only display values when available and are not required for manual creation.
 
 ## Physical Shopping Session
 
@@ -296,10 +313,19 @@ Primary actions:
 
 - Mark item as bought.
 - Mark item as not found.
+- Leave item pending.
+- Edit item quantity.
+- Edit item unit.
 - Enter or update actual price.
 - Open Product Location Form.
 - Undo a recent item outcome while the session is active.
 - Finish session.
+
+Fields:
+
+- Actual quantity.
+- Actual unit.
+- Actual price.
 
 Data shown:
 
@@ -321,6 +347,7 @@ Data shown:
 States:
 
 - Active session with pending items.
+- Pending item explicitly left undecided.
 - Item bought.
 - Item not found.
 - Product location missing.
@@ -334,8 +361,12 @@ States:
 Validation:
 
 - Bought and not-found actions remove items from the active shopping view while preserving them in the session record.
+- Pending items remain visible in the active shopping view until bought, marked not found, or confirmed as pending at finish.
+- Quantity and unit can be adjusted per item during the session to reflect what was actually purchased or searched for.
+- Quantity must be greater than zero when an item is marked bought.
+- Unit is required when an item is marked bought and must come from the supported unit catalog.
 - Actual price is optional, but when entered must be a valid non-negative monetary value.
-- Finishing with pending items requires confirmation or a decision for those items.
+- Finishing with pending items requires confirmation; confirmed pending items are written to history with pending outcome and no actual price requirement.
 - Product location updates require supermarket confirmation.
 
 ## Product Location Form
@@ -415,8 +446,12 @@ Purpose: Let the user complete one selected list in an online context without ge
 Primary actions:
 
 - Enter online source label.
+- Enter online context details.
 - Mark item as bought.
 - Mark item as unavailable online.
+- Leave item pending.
+- Edit item quantity.
+- Edit item unit.
 - Enter or update actual price.
 - Finish session.
 - Cancel or abandon session.
@@ -424,6 +459,10 @@ Primary actions:
 Fields:
 
 - Online source label.
+- Online context type, such as website, app, marketplace, or delivery service.
+- Optional online context notes.
+- Actual quantity.
+- Actual unit.
 - Actual price per item.
 - Optional session notes.
 
@@ -445,6 +484,8 @@ Data shown:
 States:
 
 - Active online session.
+- Active online session with pending items.
+- Pending item explicitly left undecided.
 - Item bought.
 - Item unavailable online.
 - Bought without price informed.
@@ -457,7 +498,13 @@ Validation:
 
 - Online sessions do not request geolocation.
 - Online sessions do not show or update physical supermarket layout.
+- Online context requires a source label before finishing.
+- Quantity and unit can be adjusted per item during the session to reflect what was actually purchased or searched for.
+- Quantity must be greater than zero when an item is marked bought.
+- Unit is required when an item is marked bought and must come from the supported unit catalog.
 - Actual price is optional, but when entered must be a valid non-negative monetary value.
+- Pending items remain visible in the active online session until bought, marked unavailable online, or confirmed as pending at finish.
+- Finishing with pending items requires confirmation; confirmed pending items are written to history with pending outcome and no actual price requirement.
 - Finished sessions write immutable history snapshots with online context.
 
 ## History
