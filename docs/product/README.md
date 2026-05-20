@@ -6,12 +6,12 @@ This folder contains the product prototype documentation for ZBuy. It describes 
 
 These documents are created as the prototype documentation plan is executed.
 
-1. [Journeys](journeys.md)
-2. [Screens](screens.md)
-3. [Data Model](data-model.md)
-4. [Business Rules](business-rules.md)
-5. [Wireframes](wireframes/index.html)
-6. [Implementation Roadmap](implementation-roadmap.md)
+1. [Journeys](journeys.md) (planned: Task 2)
+2. [Screens](screens.md) (planned: Task 3)
+3. [Data Model](data-model.md) (planned: Task 4)
+4. [Business Rules](business-rules.md) (planned: Task 5)
+5. [Wireframes](wireframes/index.html) (planned: Task 6)
+6. [Implementation Roadmap](implementation-roadmap.md) (planned: Task 7)
 
 ## Source Spec
 
