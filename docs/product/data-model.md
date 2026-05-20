@@ -44,7 +44,11 @@ erDiagram
 
 ### Snapshot Rule
 
-Completed shopping history must not depend on mutable product or list records. A shopping session item stores the product name, category, quantity, unit, expected price, actual price, and outcome as they were during the session, so history remains accurate after reusable products or lists are edited, archived, deleted, or duplicated.
+Completed shopping history must not depend on mutable product or list records. A shopping session stores the source list name snapshot, so History remains accurate if the source list is renamed, archived, deleted, or duplicated later. A shopping session item stores the product name, category label snapshot, requested quantity, requested unit snapshot, actual quantity, actual unit snapshot, expected price, actual price, and outcome as they were during the session, so history remains accurate after reusable products or lists are edited, archived, deleted, or duplicated.
+
+### Category Rule
+
+For this prototype, category is a product/category label snapshot rather than a separate normalized entity. Future implementation may normalize categories, but this conceptual model intentionally does not add a CATEGORY entity.
 
 ### Unit Rule
 
@@ -94,7 +98,7 @@ Conceptual fields:
 - id
 - owner user id
 - name
-- category
+- category label
 - brand
 - default unit
 - estimated price
@@ -156,14 +160,19 @@ Conceptual fields:
 - id
 - owner user id
 - source list id
+- source list name snapshot
 - context
 - supermarket id
+- online context type
 - online source label
+- online context notes
 - status
 - started at
 - completed at
 - estimated total
 - actual total
+
+Online context type, online source label, and online context notes support History filtering and preserve the user's online shopping context after the session is completed.
 
 ### SHOPPING_SESSION_ITEM
 
@@ -176,9 +185,11 @@ Conceptual fields:
 - source list item id
 - product id
 - product name snapshot
-- category snapshot
-- quantity
-- unit snapshot
+- category label snapshot
+- requested quantity
+- requested unit snapshot
+- actual quantity
+- actual unit snapshot
 - expected price
 - actual price
 - outcome
@@ -222,7 +233,7 @@ Conceptual fields:
 - id
 - user id
 - supermarket id
-- product id or category id
+- product id or category label
 - position label
 - notes
 - created at
@@ -236,8 +247,7 @@ Conceptual fields:
 
 - id
 - supermarket id
-- product id
-- category
+- product id or category label
 - position label
 - source
 - confidence score
