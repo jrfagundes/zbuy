@@ -4,6 +4,8 @@ This folder contains the product prototype documentation for ZBuy. It describes 
 
 ## Reading Order
 
+These documents are created as the prototype documentation plan is executed.
+
 1. [Journeys](journeys.md)
 2. [Screens](screens.md)
 3. [Data Model](data-model.md)
@@ -15,7 +17,7 @@ This folder contains the product prototype documentation for ZBuy. It describes 
 
 The approved source specification is:
 
-`docs/superpowers/specs/2026-05-20-zbuy-prototype-design.md`
+[2026-05-20-zbuy-prototype-design.md](../superpowers/specs/2026-05-20-zbuy-prototype-design.md)
 
 ## Prototype Scope
 
