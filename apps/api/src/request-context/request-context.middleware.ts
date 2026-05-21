@@ -11,8 +11,9 @@ declare module "express-serve-static-core" {
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const incoming = req.header("x-request-id");
-    const requestId = incoming && incoming.trim().length > 0 ? incoming : randomUUID();
+    const incoming = req.header("x-request-id")?.trim();
+    const requestId =
+      incoming && /^[A-Za-z0-9._:-]{1,128}$/.test(incoming) ? incoming : randomUUID();
     req.requestId = requestId;
     res.setHeader("x-request-id", requestId);
     next();

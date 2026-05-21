@@ -9,7 +9,9 @@
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "test": "jest",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prisma:generate": "node -e \"console.error('Prisma schema is introduced in Task 3'); process.exit(1)\"",
+    "prisma:migrate": "node -e \"console.error('Prisma schema is introduced in Task 3'); process.exit(1)\""
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
