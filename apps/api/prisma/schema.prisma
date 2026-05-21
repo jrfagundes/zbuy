@@ -24,6 +24,25 @@ enum AuditEventType {
   oauth_login_failed
 }
 
+enum UnitType {
+  weight
+  volume
+  count
+  package
+  custom
+}
+
+enum ShoppingListStatus {
+  active
+  archived
+}
+
+enum ListItemPriority {
+  low
+  normal
+  high
+}
+
 model User {
   id              String               @id @default(uuid())
   name            String
@@ -36,6 +55,8 @@ model User {
   sessions        Session[]
   resetTokens     PasswordResetToken[]
   auditEvents     AuditEvent[]
+  products        Product[]
+  shoppingLists   ShoppingList[]
 }
 
 model AuthIdentity {
@@ -83,4 +104,79 @@ model AuditEvent {
   metadata  Json?
   createdAt DateTime       @default(now())
   user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model Unit {
+  id             String             @id @default(uuid())
+  name           String
+  abbreviation   String
+  type           UnitType
+  allowsDecimals Boolean            @default(false)
+  active         Boolean            @default(true)
+  sortOrder      Int                @default(0)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  products       Product[]
+  listItems      ShoppingListItem[]
+
+  @@unique([abbreviation, type])
+  @@index([active, sortOrder])
+}
+
+model Product {
+  id             String             @id @default(uuid())
+  ownerUserId    String
+  name           String
+  categoryLabel  String
+  brand          String?
+  defaultUnitId  String
+  estimatedPrice Decimal?           @db.Decimal(10, 2)
+  notes          String?
+  archivedAt     DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  owner          User               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  defaultUnit    Unit               @relation(fields: [defaultUnitId], references: [id])
+  listItems      ShoppingListItem[]
+
+  @@index([ownerUserId, archivedAt])
+  @@index([ownerUserId, name])
+}
+
+model ShoppingList {
+  id                   String             @id @default(uuid())
+  ownerUserId          String
+  name                 String
+  description          String?
+  status               ShoppingListStatus @default(active)
+  duplicatedFromListId String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  owner                User               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  duplicatedFrom       ShoppingList?      @relation("ShoppingListDuplication", fields: [duplicatedFromListId], references: [id], onDelete: SetNull)
+  duplicates           ShoppingList[]     @relation("ShoppingListDuplication")
+  items                ShoppingListItem[]
+
+  @@index([ownerUserId, status])
+  @@index([ownerUserId, name])
+}
+
+model ShoppingListItem {
+  id            String           @id @default(uuid())
+  listId        String
+  productId     String
+  quantity      Decimal          @db.Decimal(10, 3)
+  unitId        String
+  expectedPrice Decimal?         @db.Decimal(10, 2)
+  priority      ListItemPriority @default(normal)
+  notes         String?
+  sortOrder     Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  list          ShoppingList     @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product       Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
+  unit          Unit             @relation(fields: [unitId], references: [id])
+
+  @@index([listId, sortOrder])
+  @@index([productId])
 }
