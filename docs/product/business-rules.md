@@ -28,7 +28,7 @@ This document defines grouped business rules for the ZBuy static prototype. Thes
 
 - Product name is required.
 - Product default unit is required.
-- Product category is represented as a non-normalized prototype label.
+- Product category is required and is represented as a non-normalized prototype label.
 - Category label snapshots are copied into session history instead of depending on a normalized category entity.
 - Unit values must be selected from a flexible unit catalog.
 - The unit catalog must support weight, volume, count, package, and store-specific packaging examples such as kg, g, unit, dozen, box, package, liter, ml, bundle, tray, can, and bottle.
@@ -59,7 +59,9 @@ This document defines grouped business rules for the ZBuy static prototype. Thes
 - Online shopping does not require location consent.
 - Online shopping must not request geolocation.
 - Online shopping must not show, create, or update physical supermarket layouts.
-- Online shopping records online source or context when available, such as website, app, marketplace, delivery service, source label, or context notes.
+- Online shopping records online source or context, such as website, app, marketplace, delivery service, source label, or context notes.
+- Online source label is required before finishing an online shopping session.
+- Online context type and notes are useful metadata but do not replace the required source label.
 - Online session items can be marked bought, unavailable online, or left pending.
 - Requested quantity and requested unit are copied from the source list item when the session starts.
 - Actual quantity and actual unit may be recorded during the session to reflect the online purchase outcome.
@@ -76,7 +78,8 @@ This document defines grouped business rules for the ZBuy static prototype. Thes
 - Users can keep private layout adjustments even when shared layout contribution consent is disabled.
 - Product positions must include confidence metadata when available.
 - Product positions must include last confirmation metadata when available.
-- Shared layout data must not expose user identity.
+- Product position created by user id may be retained internally for audit, confidence, and abuse prevention.
+- Shared layout exposure must be aggregated or anonymized and must not expose user identity.
 - Online shopping activity must not update physical layouts.
 
 ## History
@@ -97,6 +100,7 @@ This document defines grouped business rules for the ZBuy static prototype. Thes
 - Location consent is not required for online shopping.
 - Shared layout contribution requires explicit consent separate from basic app usage.
 - Shared layout data must be aggregated or anonymized so it does not expose user identity.
+- Product position created by user id may be retained for internal audit, confidence, and abuse prevention, but must not be exposed through shared layouts.
 - Private layout adjustments must remain visible only to the owner.
 - Account deletion handling must define what happens to private products, lists, sessions, purchase history, private layout adjustments, authentication identities, and any anonymized shared layout contributions.
 - Account deletion should remove or de-identify private user data while preserving only shared layout contributions that can no longer identify the user.
