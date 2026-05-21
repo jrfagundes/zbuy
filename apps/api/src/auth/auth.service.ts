@@ -1,5 +1,5 @@
-import { ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
-import { addDays } from "date-fns";
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
+import { addDays, addMinutes } from "date-fns";
 import { PrismaService } from "../prisma/prisma.service";
 import { PasswordService } from "./password.service";
 import { TokenService } from "./token.service";
@@ -138,7 +138,68 @@ export class AuthService {
     }
   }
 
+  async requestPasswordReset(emailInput: string, requestId?: string) {
+    const email = this.normalizeEmail(emailInput);
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { status: "ok" };
+    }
+
+    const resetToken = this.tokens.createOpaqueToken();
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: this.tokens.hashToken(resetToken),
+        expiresAt: addMinutes(new Date(), 30)
+      }
+    });
+    await this.prisma.auditEvent.create({
+      data: { userId: user.id, eventType: "password_reset_requested", requestId }
+    });
+
+    return this.shouldExposeDevToken() ? { status: "ok", devResetToken: resetToken } : { status: "ok" };
+  }
+
+  async confirmPasswordReset(token: string, newPassword: string, requestId?: string) {
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: this.tokens.hashToken(token) },
+      include: { user: true }
+    });
+
+    if (!resetToken || resetToken.consumedAt || resetToken.expiresAt <= new Date()) {
+      throw new BadRequestException("Invalid or expired reset token");
+    }
+
+    const passwordHash = await this.passwords.hash(newPassword);
+    await this.prisma.authIdentity.update({
+      where: {
+        provider_providerEmail: {
+          provider: "native",
+          providerEmail: resetToken.user.email
+        }
+      },
+      data: { passwordHash }
+    });
+    await this.prisma.passwordResetToken.update({
+      where: { tokenHash: resetToken.tokenHash },
+      data: { consumedAt: new Date() }
+    });
+    await this.prisma.session.updateMany({
+      where: { userId: resetToken.userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+    await this.prisma.auditEvent.create({
+      data: { userId: resetToken.userId, eventType: "password_reset_completed", requestId }
+    });
+
+    return { status: "ok" };
+  }
+
   private normalizeEmail(email: string) {
     return email.trim().toLowerCase();
+  }
+
+  private shouldExposeDevToken() {
+    return process.env.NODE_ENV !== "production";
   }
 }
