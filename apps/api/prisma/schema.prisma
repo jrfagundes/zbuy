@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AuthProvider {
+  native
+  google
+  microsoft
+}
+
+enum AuditEventType {
+  account_created
+  login_succeeded
+  login_failed
+  logout
+  password_reset_requested
+  password_reset_completed
+  oauth_login_succeeded
+  oauth_login_failed
+}
+
+model User {
+  id              String               @id @default(uuid())
+  name            String
+  email           String               @unique
+  emailVerifiedAt DateTime?
+  disabledAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  identities      AuthIdentity[]
+  sessions        Session[]
+  resetTokens     PasswordResetToken[]
+  auditEvents     AuditEvent[]
+}
+
+model AuthIdentity {
+  id                String       @id @default(uuid())
+  userId            String
+  provider          AuthProvider
+  providerSubjectId String?
+  providerEmail     String
+  passwordHash      String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubjectId])
+  @@unique([provider, providerEmail])
+}
+
+model Session {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetToken {
+  id         String    @id @default(uuid())
+  userId     String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AuditEvent {
+  id        String         @id @default(uuid())
+  userId    String?
+  eventType AuditEventType
+  requestId String?
+  traceId   String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
