@@ -26,6 +26,8 @@ corepack pnpm --filter @zbuy/api dev
 
 Open SigNoz at `http://localhost:3301` unless `SIGNOZ_PORT` is changed.
 
+For the current Windows local setup, prefer running only `postgres` and `signoz` in Docker, then run API and web on the host with `corepack pnpm`. This avoids Linux containers reading Windows-created workspace `node_modules`.
+
 ## Generate Traffic
 
 ```powershell
