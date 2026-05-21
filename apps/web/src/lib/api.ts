@@ -1,6 +1,7 @@
 import type { AuthenticatedUserResponse } from "@zbuy/shared";
 
-export const apiBaseUrl = process.env.WEB_PUBLIC_API_URL ?? "http://localhost:3001";
+export const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_URL ?? process.env.WEB_PUBLIC_API_URL ?? "http://127.0.0.1:3001";
 
 export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl}${path}`, {

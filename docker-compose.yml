@@ -27,7 +27,7 @@ services:
     environment:
       NODE_ENV: development
       API_PORT: 3001
-      WEB_ORIGIN: http://localhost:3000
+      WEB_ORIGIN: http://localhost:3000,http://127.0.0.1:3000
       DATABASE_URL: postgresql://zbuy:zbuy@postgres:5432/zbuy?schema=public
       SESSION_COOKIE_NAME: zbuy_session
       OTEL_SERVICE_NAME: zbuy-api
@@ -47,7 +47,7 @@ services:
       - api
     environment:
       NODE_ENV: development
-      WEB_PUBLIC_API_URL: http://localhost:3001
+      NEXT_PUBLIC_API_URL: http://localhost:3001
     ports:
       - "3000:3000"
     profiles:

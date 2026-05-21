@@ -28,6 +28,12 @@ export default function AccountPage() {
     };
   }, []);
 
+  async function logout() {
+    await apiRequest<void>("/auth/logout", { method: "POST" }).catch(() => undefined);
+    setUser(null);
+    setStatus("error");
+  }
+
   return (
     <main className="account-shell">
       <section className="account-panel">
@@ -41,7 +47,9 @@ export default function AccountPage() {
           <>
             <h1>{user.name}</h1>
             <p>{user.email}</p>
-            <button type="button">Sair</button>
+            <button type="button" onClick={logout}>
+              Sair
+            </button>
           </>
         ) : status === "loading" ? (
           <>

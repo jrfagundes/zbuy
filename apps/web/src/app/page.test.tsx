@@ -7,6 +7,10 @@ import LoginPage from "./page";
 import ResetPasswordPage from "./reset-password/page";
 import SignUpPage from "./signup/page";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() })
+}));
+
 describe("authentication screens", () => {
   afterEach(() => {
     cleanup();

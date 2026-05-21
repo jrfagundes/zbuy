@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React from "react";
 import { FormEvent, useState } from "react";
 import { apiBaseUrl, apiRequest, type AuthResponse } from "../lib/api";
@@ -30,6 +31,7 @@ const copy = {
 };
 
 export function AuthForm({ mode }: AuthFormProps) {
+  const router = useRouter();
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -59,6 +61,10 @@ export function AuthForm({ mode }: AuthFormProps) {
         method: "POST",
         body: JSON.stringify(payload)
       });
+      if (mode !== "reset") {
+        router.push("/account");
+        return;
+      }
       setStatus("success");
       setMessage(copy[mode].success);
     } catch (error) {
