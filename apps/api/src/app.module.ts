@@ -6,10 +6,20 @@ import { ObservabilityModule } from "./observability/observability.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
+import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
 import { UnitsModule } from "./units/units.module";
 
 @Module({
-  imports: [ObservabilityModule, PrismaModule, HealthModule, AuthModule, MeModule, UnitsModule, ProductsModule]
+  imports: [
+    ObservabilityModule,
+    PrismaModule,
+    HealthModule,
+    AuthModule,
+    MeModule,
+    UnitsModule,
+    ProductsModule,
+    ShoppingListsModule
+  ]
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
