@@ -4,7 +4,7 @@ test("native account, products, and reusable lists", async ({ page }) => {
   const email = `e2e-${Date.now()}@example.com`;
   const password = "CorrectHorseBatteryStaple1!";
 
-  await page.goto("/signup");
+  await page.goto("/signup", { waitUntil: "commit" });
   await page.getByLabel("Nome").fill("E2E User");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(password);
@@ -12,7 +12,7 @@ test("native account, products, and reusable lists", async ({ page }) => {
   await expect(page).toHaveURL(/\/account/);
   await expect(page.getByText(email)).toBeVisible({ timeout: 10_000 });
 
-  await page.goto("/products");
+  await page.goto("/products", { waitUntil: "commit" });
   await expect(page.getByRole("button", { name: "Salvar produto" })).toBeEnabled();
   await page.getByLabel("Nome do produto").fill("Arroz");
   await page.getByLabel("Categoria").fill("Mercearia");
@@ -20,7 +20,7 @@ test("native account, products, and reusable lists", async ({ page }) => {
   await page.getByRole("button", { name: "Salvar produto" }).click();
   await expect(page.getByText("Arroz")).toBeVisible();
 
-  await page.goto("/lists");
+  await page.goto("/lists", { waitUntil: "commit" });
   await expect(page.getByText("Nenhuma lista criada.")).toBeVisible();
   await page.getByLabel("Nome da lista").fill("Compra semanal");
   await page.getByRole("button", { name: "Criar lista" }).click();
@@ -31,16 +31,16 @@ test("native account, products, and reusable lists", async ({ page }) => {
   await page.getByRole("button", { name: "Adicionar item" }).click();
   await expect(page.locator(".resource-row", { hasText: "Arroz" })).toBeVisible();
 
-  await page.goto("/lists");
+  await page.goto("/lists", { waitUntil: "commit" });
   await page.getByRole("button", { name: "Duplicar Compra semanal" }).click();
   await expect(page.getByText("Compra semanal - copia")).toBeVisible();
 
-  await page.goto("/account");
+  await page.goto("/account", { waitUntil: "commit" });
   await expect(page.getByText(email)).toBeVisible({ timeout: 10_000 });
   await page.getByRole("button", { name: "Sair" }).click();
   await expect(page.getByText("Conta indisponível")).toBeVisible();
 
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "commit" });
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(password);
   await page.getByRole("button", { name: "Entrar" }).click();
