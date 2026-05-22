@@ -47,6 +47,14 @@ export default function AccountPage() {
           <>
             <h1>{user.name}</h1>
             <p>{user.email}</p>
+            <div className="account-actions">
+              <a className="button secondary" href="/products">
+                Produtos
+              </a>
+              <a className="button secondary" href="/lists">
+                Listas
+              </a>
+            </div>
             <button type="button" onClick={logout}>
               Sair
             </button>
