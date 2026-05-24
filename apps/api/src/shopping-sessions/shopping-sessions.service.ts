@@ -217,14 +217,14 @@ export class ShoppingSessionsService {
         description: null,
         duplicatedFromListId: session.sourceListId,
         items: {
-          create: continuationItems.map((item, index) => ({
+          create: continuationItems.map((item) => ({
             productId: item.sourceProductId as string,
             quantity: item.quantity.toString(),
             unitId: item.unitId as string,
             expectedPrice: item.expectedPrice?.toString() ?? null,
             priority: item.priority,
             notes: item.notes,
-            sortOrder: index
+            sortOrder: item.sortOrder
           }))
         }
       },

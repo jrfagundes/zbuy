@@ -470,6 +470,8 @@ describe("ShoppingSessionsService", () => {
     const data = makeMockData();
     const product = makeProduct({ id: "product-milk", name: "Leite", brand: null });
     data.products.push(product);
+    data.lists[0]!.items[0]!.sortOrder = 10;
+    data.lists[0]!.items[1]!.sortOrder = 30;
     data.lists[0]!.items.push({
       id: "list-item-milk",
       listId: "list-1",
@@ -479,7 +481,7 @@ describe("ShoppingSessionsService", () => {
       expectedPrice: decimal("6.25"),
       priority: "low",
       notes: "Sem lactose",
-      sortOrder: 2,
+      sortOrder: 20,
       createdAt: now,
       updatedAt: now,
       product,
@@ -487,18 +489,18 @@ describe("ShoppingSessionsService", () => {
     });
     const service = makeService(data);
     const session = await service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" });
-    await service.updateItem("user-1", session.id, session.items[0]!.id, { status: "bought", actualPrice: "12.50" });
-    await service.updateItem("user-1", session.id, session.items[1]!.id, { status: "not_found" });
+    await service.updateItem("user-1", session.id, session.items[0]!.id, { status: "not_found" });
+    await service.updateItem("user-1", session.id, session.items[1]!.id, { status: "bought", actualPrice: "12.50" });
     await service.complete("user-1", session.id);
 
     const continuation = await service.createContinuationList("user-1", session.id, { name: " Continuacao " });
 
     expect(continuation.name).toBe("Continuacao");
     const items = data.lists.find((list) => list.id === continuation.id)?.items ?? [];
-    expect(items.map((item) => item.productId)).toEqual(["product-beans", "product-milk"]);
+    expect(items.map((item) => item.productId)).toEqual(["product-rice", "product-beans"]);
     expect(items).toHaveLength(2);
-    expect(items[0]).toMatchObject({ notes: null, sortOrder: 0 });
-    expect(items[1]).toMatchObject({ notes: "Sem lactose", sortOrder: 1 });
+    expect(items[0]).toMatchObject({ notes: "Integral", sortOrder: 10 });
+    expect(items[1]).toMatchObject({ notes: null, sortOrder: 30 });
   });
 
   it("isolates session ownership", async () => {
