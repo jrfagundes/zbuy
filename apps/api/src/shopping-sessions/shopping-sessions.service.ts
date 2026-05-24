@@ -63,34 +63,42 @@ export class ShoppingSessionsService {
       throw new BadRequestException("Shopping session context must match purchase location type");
     }
 
-    const session = await this.prisma.shoppingSession.create({
-      data: {
-        ownerUserId,
-        sourceListId: dto.sourceListId,
-        purchaseLocationId: dto.purchaseLocationId,
-        context: dto.context,
-        items: {
-          create: sourceList.items.map((item) => ({
-            sourceProductId: item.productId,
-            sourceListItemId: item.id,
-            snapshotProductName: item.product.name,
-            snapshotCategoryLabel: item.product.categoryLabel,
-            snapshotBrand: item.product.brand,
-            quantity: item.quantity.toString(),
-            unitId: item.unitId,
-            snapshotUnitName: item.unit.name,
-            snapshotUnitAbbreviation: item.unit.abbreviation,
-            expectedPrice: item.expectedPrice?.toString() ?? null,
-            priority: item.priority,
-            notes: item.notes,
-            sortOrder: item.sortOrder
-          }))
-        }
-      },
-      include: sessionInclude
-    });
+    try {
+      const session = await this.prisma.shoppingSession.create({
+        data: {
+          ownerUserId,
+          sourceListId: dto.sourceListId,
+          snapshotSourceListName: sourceList.name,
+          purchaseLocationId: dto.purchaseLocationId,
+          context: dto.context,
+          items: {
+            create: sourceList.items.map((item) => ({
+              sourceProductId: item.productId,
+              sourceListItemId: item.id,
+              snapshotProductName: item.product.name,
+              snapshotCategoryLabel: item.product.categoryLabel,
+              snapshotBrand: item.product.brand,
+              quantity: item.quantity.toString(),
+              unitId: item.unitId,
+              snapshotUnitName: item.unit.name,
+              snapshotUnitAbbreviation: item.unit.abbreviation,
+              expectedPrice: item.expectedPrice?.toString() ?? null,
+              priority: item.priority,
+              notes: item.notes,
+              sortOrder: item.sortOrder
+            }))
+          }
+        },
+        include: sessionInclude
+      });
 
-    return toShoppingSessionDetailDto(session);
+      return toShoppingSessionDetailDto(session);
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new BadRequestException("User already has an active shopping session");
+      }
+      throw error;
+    }
   }
 
   async list(ownerUserId: string, status?: string, limit?: number) {
@@ -153,26 +161,37 @@ export class ShoppingSessionsService {
   }
 
   async complete(ownerUserId: string, id: string) {
-    const session = await this.findOwnedSession(ownerUserId, id);
-    ensureActiveSession(session);
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.shoppingSession.findFirst({
+        where: { id, ownerUserId },
+        include: sessionInclude
+      });
+      if (!session) {
+        throw new NotFoundException("Shopping session not found");
+      }
+      ensureActiveSession(session);
 
-    await this.prisma.shoppingSessionItem.updateMany({
-      where: { sessionId: id, status: "pending" },
-      data: { status: "unprocessed" }
-    });
-    const totals = calculateTotals((session.items ?? []).map((item) => (item.status === "pending" ? { ...item, status: "unprocessed" } : item)));
-    const updated = await this.prisma.shoppingSession.update({
-      where: { id },
-      data: {
-        status: "completed",
-        completedAt: new Date(),
-        knownTotal: totals.knownTotal,
-        boughtItemsWithoutPriceCount: totals.boughtItemsWithoutPriceCount
-      },
-      include: sessionInclude
-    });
+      await tx.shoppingSessionItem.updateMany({
+        where: { sessionId: id, status: "pending" },
+        data: { status: "unprocessed" }
+      });
 
-    return toShoppingSessionDetailDto(updated);
+      const totals = calculateTotals(
+        (session.items ?? []).map((item) => (item.status === "pending" ? { ...item, status: "unprocessed" } : item))
+      );
+      const updated = await tx.shoppingSession.update({
+        where: { id },
+        data: {
+          status: "completed",
+          completedAt: new Date(),
+          knownTotal: totals.knownTotal,
+          boughtItemsWithoutPriceCount: totals.boughtItemsWithoutPriceCount
+        },
+        include: sessionInclude
+      });
+
+      return toShoppingSessionDetailDto(updated);
+    });
   }
 
   async cancel(ownerUserId: string, id: string) {
@@ -266,6 +285,10 @@ function ensureActiveSession(session: { status: string }) {
   if (session.status !== "active") {
     throw new BadRequestException("Shopping session is not active");
   }
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
 function calculateTotals(items: Array<Pick<ShoppingSessionItem, "status" | "actualPrice">>) {

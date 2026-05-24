@@ -5,6 +5,7 @@ import { toPurchaseLocationDto } from "../purchase-locations/purchase-location-r
 type DecimalLike = { toString(): string };
 
 export type ShoppingSessionWithRelations = ShoppingSession & {
+  snapshotSourceListName: string;
   purchaseLocation: PurchaseLocation;
   sourceList: ShoppingList;
   items?: ShoppingSessionItem[];
@@ -56,7 +57,7 @@ export function toShoppingSessionSummaryDto(session: ShoppingSessionWithRelation
   return {
     id: session.id,
     sourceListId: session.sourceListId,
-    sourceListName: session.sourceList.name,
+    sourceListName: session.snapshotSourceListName,
     purchaseLocation: toPurchaseLocationDto(session.purchaseLocation),
     context: session.context,
     status: session.status,

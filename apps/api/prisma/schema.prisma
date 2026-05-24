@@ -233,6 +233,7 @@ model ShoppingSession {
   id                           String                @id @default(uuid())
   ownerUserId                  String
   sourceListId                 String
+  snapshotSourceListName       String
   purchaseLocationId           String
   context                      ShoppingSessionContext
   status                       ShoppingSessionStatus @default(active)

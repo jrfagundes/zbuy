@@ -23,6 +23,7 @@ type ListItemRecord = ShoppingListItem & { product: Product; unit: Unit };
 type ShoppingListRecord = ShoppingList & { items: ListItemRecord[] };
 type SessionItemRecord = ShoppingSessionItem;
 type SessionRecord = ShoppingSession & {
+  snapshotSourceListName: string;
   items: SessionItemRecord[];
   purchaseLocation?: PurchaseLocation;
   sourceList?: ShoppingList;
@@ -209,6 +210,12 @@ function matchesWhere<T extends { id: string; ownerUserId?: string; status?: str
 
 function makePrismaMock(data: MockData = makeMockData()) {
   const prisma = {
+    $transaction: jest.fn((operations) => {
+      if (Array.isArray(operations)) {
+        return Promise.all(operations);
+      }
+      return operations(prisma);
+    }),
     shoppingSession: {
       findFirst: jest.fn(({ where, include, orderBy }) => {
         const sessions = data.sessions
@@ -232,6 +239,7 @@ function makePrismaMock(data: MockData = makeMockData()) {
           id: `session-${data.nextSessionId++}`,
           ownerUserId: createData.ownerUserId,
           sourceListId: createData.sourceListId,
+          snapshotSourceListName: createData.snapshotSourceListName,
           purchaseLocationId: createData.purchaseLocationId,
           context: createData.context,
           status: "active",
@@ -357,7 +365,7 @@ function makeService(data = makeMockData()) {
 }
 
 describe("ShoppingSessionsService", () => {
-  it("keeps item snapshots immutable after product and list edits", async () => {
+  it("keeps source list and item snapshots immutable after source edits and completion", async () => {
     const data = makeMockData();
     const service = makeService(data);
 
@@ -370,10 +378,11 @@ describe("ShoppingSessionsService", () => {
     data.lists[0]!.name = "Compra alterada";
     data.lists[0]!.items[0]!.product.name = "Arroz alterado";
     data.lists[0]!.items[0]!.quantity = decimal("9");
+    await service.complete("user-1", started.id);
 
     const detail = await service.get("user-1", started.id);
 
-    expect(detail.sourceListName).toBe("Compra alterada");
+    expect(detail.sourceListName).toBe("Compra semanal");
     expect(detail.items[0]).toMatchObject({
       snapshotProductName: "Arroz",
       quantity: "2",
@@ -389,6 +398,24 @@ describe("ShoppingSessionsService", () => {
     await expect(
       service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" })
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("maps database active-session uniqueness races to an active session error", async () => {
+    const data = makeMockData();
+    const { prisma } = makePrismaMock(data);
+    jest.spyOn(prisma.shoppingSession, "findFirst").mockResolvedValueOnce(null);
+    jest.spyOn(prisma.shoppingSession, "create").mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "6.1.0",
+        meta: { target: ["ownerUserId"] }
+      })
+    );
+    const service = new ShoppingSessionsService(prisma, new PurchaseLocationsService(prisma));
+
+    await expect(
+      service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" })
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it("allows different users to each have an active session", async () => {
@@ -430,12 +457,15 @@ describe("ShoppingSessionsService", () => {
   });
 
   it("converts pending items to unprocessed when completing a session", async () => {
-    const service = makeService();
+    const data = makeMockData();
+    const { prisma } = makePrismaMock(data);
+    const service = new ShoppingSessionsService(prisma, new PurchaseLocationsService(prisma));
     const session = await service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" });
     await service.updateItem("user-1", session.id, session.items[0]!.id, { status: "bought", actualPrice: "12.50" });
 
     const completed = await service.complete("user-1", session.id);
 
+    expect(prisma.$transaction).toHaveBeenCalled();
     expect(completed.status).toBe("completed");
     expect(completed.completedAt).toEqual(expect.any(String));
     expect(completed.itemCounts).toEqual({ pending: 0, bought: 1, notFound: 0, unprocessed: 1 });
