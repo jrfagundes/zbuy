@@ -5,6 +5,7 @@ import { MeModule } from "./me/me.module";
 import { ObservabilityModule } from "./observability/observability.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProductsModule } from "./products/products.module";
+import { PurchaseLocationsModule } from "./purchase-locations/purchase-locations.module";
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
 import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
 import { UnitsModule } from "./units/units.module";
@@ -18,6 +19,7 @@ import { UnitsModule } from "./units/units.module";
     MeModule,
     UnitsModule,
     ProductsModule,
+    PurchaseLocationsModule,
     ShoppingListsModule
   ]
 })
