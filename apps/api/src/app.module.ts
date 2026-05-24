@@ -8,6 +8,7 @@ import { ProductsModule } from "./products/products.module";
 import { PurchaseLocationsModule } from "./purchase-locations/purchase-locations.module";
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
 import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
+import { ShoppingSessionsModule } from "./shopping-sessions/shopping-sessions.module";
 import { UnitsModule } from "./units/units.module";
 
 @Module({
@@ -20,7 +21,8 @@ import { UnitsModule } from "./units/units.module";
     UnitsModule,
     ProductsModule,
     PurchaseLocationsModule,
-    ShoppingListsModule
+    ShoppingListsModule,
+    ShoppingSessionsModule
   ]
 })
 export class AppModule implements NestModule {
