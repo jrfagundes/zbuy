@@ -43,20 +43,45 @@ enum ListItemPriority {
   high
 }
 
+enum PurchaseLocationType {
+  physical
+  online
+}
+
+enum ShoppingSessionContext {
+  physical
+  online
+}
+
+enum ShoppingSessionStatus {
+  active
+  completed
+  canceled
+}
+
+enum ShoppingSessionItemStatus {
+  pending
+  bought
+  not_found
+  unprocessed
+}
+
 model User {
-  id              String               @id @default(uuid())
-  name            String
-  email           String               @unique
-  emailVerifiedAt DateTime?
-  disabledAt      DateTime?
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  identities      AuthIdentity[]
-  sessions        Session[]
-  resetTokens     PasswordResetToken[]
-  auditEvents     AuditEvent[]
-  products        Product[]
-  shoppingLists   ShoppingList[]
+  id                String               @id @default(uuid())
+  name              String
+  email             String               @unique
+  emailVerifiedAt   DateTime?
+  disabledAt        DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  identities        AuthIdentity[]
+  sessions          Session[]
+  resetTokens       PasswordResetToken[]
+  auditEvents       AuditEvent[]
+  products          Product[]
+  shoppingLists     ShoppingList[]
+  purchaseLocations PurchaseLocation[]
+  shoppingSessions  ShoppingSession[]
 }
 
 model AuthIdentity {
@@ -118,6 +143,7 @@ model Unit {
   updatedAt      DateTime           @updatedAt
   products       Product[]
   listItems      ShoppingListItem[]
+  sessionItems   ShoppingSessionItem[]
 
   @@unique([abbreviation, type])
   @@index([active, sortOrder])
@@ -138,6 +164,7 @@ model Product {
   owner          User               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   defaultUnit    Unit               @relation(fields: [defaultUnitId], references: [id])
   listItems      ShoppingListItem[]
+  sessionItems   ShoppingSessionItem[]
 
   @@index([ownerUserId, archivedAt])
   @@index([ownerUserId, name])
@@ -156,6 +183,7 @@ model ShoppingList {
   duplicatedFrom       ShoppingList?      @relation("ShoppingListDuplication", fields: [duplicatedFromListId], references: [id], onDelete: SetNull)
   duplicates           ShoppingList[]     @relation("ShoppingListDuplication")
   items                ShoppingListItem[]
+  shoppingSessions     ShoppingSession[]
 
   @@index([ownerUserId, status])
   @@index([ownerUserId, name])
@@ -176,7 +204,82 @@ model ShoppingListItem {
   list          ShoppingList     @relation(fields: [listId], references: [id], onDelete: Cascade)
   product       Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
   unit          Unit             @relation(fields: [unitId], references: [id])
+  sessionItems  ShoppingSessionItem[]
 
   @@index([listId, sortOrder])
   @@index([productId])
+}
+
+model PurchaseLocation {
+  id               String               @id @default(uuid())
+  ownerUserId      String
+  type             PurchaseLocationType
+  name             String
+  address          String?
+  city             String?
+  websiteOrApp     String?
+  notes            String?
+  archivedAt       DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  owner            User                 @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  shoppingSessions ShoppingSession[]
+
+  @@index([ownerUserId, type, archivedAt])
+  @@index([ownerUserId, name])
+}
+
+model ShoppingSession {
+  id                           String                @id @default(uuid())
+  ownerUserId                  String
+  sourceListId                 String
+  purchaseLocationId           String
+  context                      ShoppingSessionContext
+  status                       ShoppingSessionStatus @default(active)
+  startedAt                    DateTime              @default(now())
+  completedAt                  DateTime?
+  canceledAt                   DateTime?
+  knownTotal                   Decimal               @default(0) @db.Decimal(12, 2)
+  boughtItemsWithoutPriceCount Int                   @default(0)
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
+  owner                        User                  @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceList                   ShoppingList          @relation(fields: [sourceListId], references: [id], onDelete: Restrict)
+  purchaseLocation             PurchaseLocation      @relation(fields: [purchaseLocationId], references: [id], onDelete: Restrict)
+  items                        ShoppingSessionItem[]
+
+  @@index([ownerUserId, status])
+  @@index([ownerUserId, startedAt])
+  @@index([purchaseLocationId])
+  @@index([sourceListId])
+}
+
+model ShoppingSessionItem {
+  id                       String                    @id @default(uuid())
+  sessionId                String
+  sourceProductId          String?
+  sourceListItemId         String?
+  snapshotProductName      String
+  snapshotCategoryLabel    String
+  snapshotBrand            String?
+  quantity                 Decimal                   @db.Decimal(10, 3)
+  unitId                   String?
+  snapshotUnitName         String
+  snapshotUnitAbbreviation String
+  expectedPrice            Decimal?                  @db.Decimal(10, 2)
+  actualPrice              Decimal?                  @db.Decimal(10, 2)
+  status                   ShoppingSessionItemStatus @default(pending)
+  priority                 ListItemPriority          @default(normal)
+  notes                    String?
+  sortOrder                Int                       @default(0)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  session                  ShoppingSession           @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sourceProduct            Product?                  @relation(fields: [sourceProductId], references: [id], onDelete: SetNull)
+  sourceListItem           ShoppingListItem?         @relation(fields: [sourceListItemId], references: [id], onDelete: SetNull)
+  unit                     Unit?                     @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, status, sortOrder])
+  @@index([sourceProductId])
+  @@index([sourceListItemId])
 }
