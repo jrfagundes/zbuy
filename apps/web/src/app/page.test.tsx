@@ -605,6 +605,14 @@ describe("purchase history screens", () => {
     vi.spyOn(resources, "listPurchaseHistorySessions").mockResolvedValue({ shoppingSessions: sessions });
   }
 
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((done) => {
+      resolve = done;
+    });
+    return { promise, resolve };
+  }
+
   function mockHistoryDetail(session: ShoppingSessionDetailDto = { ...summarySession, items: [boughtItem, notFoundItem, unprocessedItem] }) {
     routeParams.current = { id: session.id };
     vi.spyOn(resources, "getPurchaseHistorySession").mockResolvedValue(session);
@@ -635,8 +643,8 @@ describe("purchase history screens", () => {
 
     await waitFor(() =>
       expect(resources.listPurchaseHistorySessions).toHaveBeenLastCalledWith({
-        dateFrom: "2026-05-01",
-        dateTo: "2026-05-24",
+        dateFrom: "2026-05-01T00:00:00.000Z",
+        dateTo: "2026-05-24T23:59:59.999Z",
         locationId: "loc-1",
         locationType: "physical",
         productQuery: "arroz",
@@ -647,6 +655,41 @@ describe("purchase history screens", () => {
         withoutPrice: true
       })
     );
+    expect(vi.mocked(resources.listPurchaseHistorySessions).mock.calls.at(-1)?.[0]?.dateTo).toBe(
+      "2026-05-24T23:59:59.999Z"
+    );
+    expect(vi.mocked(resources.listPurchaseHistorySessions).mock.calls.at(-1)?.[0]?.dateTo).not.toBe("2026-05-24");
+  });
+
+  it("does not let an older history response overwrite filtered results", async () => {
+    const initialHistory = deferred<{ shoppingSessions: ShoppingSessionSummaryDto[] }>();
+    const filteredSession: ShoppingSessionSummaryDto = {
+      ...summarySession,
+      id: "session-filtered",
+      sourceListName: "Compra filtrada",
+      knownTotal: "12.00",
+      boughtItemsWithoutPriceCount: 0
+    };
+    vi.spyOn(resources, "listPurchaseLocations").mockResolvedValue({ purchaseLocations: [location] });
+    vi.spyOn(resources, "listShoppingLists").mockResolvedValue({ shoppingLists: [shoppingList] });
+    vi.spyOn(resources, "listPurchaseHistorySessions")
+      .mockReturnValueOnce(initialHistory.promise)
+      .mockResolvedValueOnce({ shoppingSessions: [filteredSession] });
+
+    render(<HistoryPage />);
+
+    fireEvent.change(screen.getByLabelText("Produto"), { target: { value: "arroz" } });
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    expect(await screen.findByRole("link", { name: "Ver detalhes de Compra filtrada" })).toBeInTheDocument();
+
+    await act(async () => {
+      initialHistory.resolve({ shoppingSessions: [summarySession] });
+      await initialHistory.promise;
+    });
+
+    expect(screen.getByRole("link", { name: "Ver detalhes de Compra filtrada" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ver detalhes de Compra semanal" })).not.toBeInTheDocument();
   });
 
   it("shows known totals and missing price warnings in history rows", async () => {

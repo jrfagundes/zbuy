@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useEffect, useRef, useState } from "react";
 import type {
   PurchaseLocationDto,
   PurchaseLocationType,
@@ -39,8 +39,8 @@ const initialFilters: HistoryFilterForm = {
 
 function toHistoryFilters(filters: HistoryFilterForm) {
   return {
-    dateFrom: filters.dateFrom || undefined,
-    dateTo: filters.dateTo || undefined,
+    dateFrom: normalizeDateFrom(filters.dateFrom),
+    dateTo: normalizeDateTo(filters.dateTo),
     locationId: filters.locationId || undefined,
     locationType: filters.locationType || undefined,
     productQuery: filters.productQuery.trim() || undefined,
@@ -50,6 +50,18 @@ function toHistoryFilters(filters: HistoryFilterForm) {
     maxPrice: filters.maxPrice.trim() || undefined,
     withoutPrice: filters.withoutPrice || undefined
   };
+}
+
+function normalizeDateFrom(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? `${trimmed}T00:00:00.000Z` : trimmed;
+}
+
+function normalizeDateTo(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? `${trimmed}T23:59:59.999Z` : trimmed;
 }
 
 function completedDate(session: ShoppingSessionSummaryDto) {
@@ -72,42 +84,47 @@ export default function HistoryPage() {
   const [lists, setLists] = useState<ShoppingListSummaryDto[]>([]);
   const [sessions, setSessions] = useState<ShoppingSessionSummaryDto[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const historyRequestId = useRef(0);
 
   async function loadHistory(nextFilters = filters) {
+    const requestId = historyRequestId.current + 1;
+    historyRequestId.current = requestId;
     setStatus("loading");
-    const response = await listPurchaseHistorySessions(toHistoryFilters(nextFilters));
-    setSessions(response.shoppingSessions);
-    setStatus("ready");
+    try {
+      const response = await listPurchaseHistorySessions(toHistoryFilters(nextFilters));
+      if (historyRequestId.current !== requestId) return;
+      setSessions(response.shoppingSessions);
+      setStatus("ready");
+    } catch {
+      if (historyRequestId.current !== requestId) return;
+      setStatus("error");
+    }
   }
 
   useEffect(() => {
     let active = true;
 
-    Promise.all([listPurchaseLocations(), listShoppingLists(), listPurchaseHistorySessions()])
-      .then(([purchaseLocations, shoppingLists, historySessions]) => {
+    Promise.all([listPurchaseLocations(), listShoppingLists()])
+      .then(([purchaseLocations, shoppingLists]) => {
         if (!active) return;
         setLocations(purchaseLocations.purchaseLocations);
         setLists(shoppingLists.shoppingLists);
-        setSessions(historySessions.shoppingSessions);
-        setStatus("ready");
       })
       .catch(() => {
         if (!active) return;
         setStatus("error");
       });
+    void loadHistory(initialFilters);
 
     return () => {
       active = false;
+      historyRequestId.current += 1;
     };
   }, []);
 
   async function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    try {
-      await loadHistory(filters);
-    } catch {
-      setStatus("error");
-    }
+    await loadHistory(filters);
   }
 
   return (
