@@ -24,6 +24,21 @@ import { StartPurchaseForm } from "./StartPurchaseForm";
 
 const recentSessionsLimit = 5;
 
+function sessionDate(session: ShoppingSessionSummaryDto) {
+  return session.completedAt ?? session.canceledAt ?? session.startedAt;
+}
+
+async function loadRecentSessions() {
+  const [completed, canceled] = await Promise.all([
+    listShoppingSessions("completed", recentSessionsLimit),
+    listShoppingSessions("canceled", recentSessionsLimit)
+  ]);
+
+  return [...completed.shoppingSessions, ...canceled.shoppingSessions]
+    .sort((left, right) => sessionDate(right).localeCompare(sessionDate(left)))
+    .slice(0, recentSessionsLimit);
+}
+
 function sessionLink(session: ShoppingSessionSummaryDto) {
   if (session.status === "active") return `/purchases/${session.id}`;
   if (session.status === "completed") return `/history/${session.id}`;
@@ -66,12 +81,12 @@ export default function PurchasesPage() {
   async function loadDashboard(selectedContext = context) {
     const [active, sessions, shoppingLists, purchaseLocations] = await Promise.all([
       getActiveShoppingSession(),
-      listShoppingSessions(undefined, recentSessionsLimit),
+      loadRecentSessions(),
       listShoppingLists(),
       listPurchaseLocations(selectedContext)
     ]);
     setActiveSession(active);
-    setRecentSessions(sessions.shoppingSessions);
+    setRecentSessions(sessions);
     setLists(shoppingLists.shoppingLists);
     setLocations(purchaseLocations.purchaseLocations);
     setStatus("ready");
@@ -109,8 +124,7 @@ export default function PurchasesPage() {
     try {
       await cancelShoppingSession(id);
       setActiveSession(null);
-      const sessions = await listShoppingSessions(undefined, recentSessionsLimit);
-      setRecentSessions(sessions.shoppingSessions);
+      setRecentSessions(await loadRecentSessions());
     } finally {
       setCanceling(false);
     }
@@ -180,7 +194,12 @@ export default function PurchasesPage() {
             )}
 
             <section className="resource-panel">
-              <h2>Sessões recentes</h2>
+              <div className="panel-heading">
+                <h2>Sessões recentes</h2>
+                <Link className="button secondary" href="/history">
+                  Ver histórico completo
+                </Link>
+              </div>
               {recentSessions.length === 0 ? <p className="muted">Nenhuma sessão recente.</p> : null}
               <div className="resource-list">
                 {recentSessions.map((session) => {

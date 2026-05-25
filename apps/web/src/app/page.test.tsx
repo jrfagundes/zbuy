@@ -121,9 +121,21 @@ describe("purchase dashboard", () => {
     itemCounts: { pending: 0, bought: 2, notFound: 0, unprocessed: 0 }
   };
 
+  const canceledSession = {
+    ...activeSession,
+    id: "session-canceled",
+    sourceListName: "Compra cancelada",
+    status: "canceled" as const,
+    canceledAt: "2026-05-24T10:30:00.000Z"
+  };
+
   function mockPurchaseResources(active: typeof activeSession | null = null) {
     vi.spyOn(resources, "getActiveShoppingSession").mockResolvedValue(active);
-    vi.spyOn(resources, "listShoppingSessions").mockResolvedValue({ shoppingSessions: [completedSession] });
+    vi.spyOn(resources, "listShoppingSessions").mockImplementation(async (status) => {
+      if (status === "completed") return { shoppingSessions: [completedSession] };
+      if (status === "canceled") return { shoppingSessions: [canceledSession] };
+      return { shoppingSessions: [] };
+    });
     vi.spyOn(resources, "listShoppingLists").mockResolvedValue({ shoppingLists: [shoppingList] });
     vi.spyOn(resources, "listPurchaseLocations").mockResolvedValue({ purchaseLocations: [location] });
     vi.spyOn(resources, "cancelShoppingSession").mockResolvedValue({
@@ -161,6 +173,28 @@ describe("purchase dashboard", () => {
     expect(screen.getByLabelText("Local")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Compra semanal" })).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument();
+  });
+
+  it("links to full history and shows canceled recent sessions", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    expect(await screen.findByRole("link", { name: "Ver histórico completo" })).toHaveAttribute("href", "/history");
+    expect(screen.getAllByText("Compra cancelada").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("canceled").length).toBeGreaterThan(0);
+  });
+
+  it("loads recent sessions by completed and canceled status only", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    await screen.findByText("Sessões recentes");
+
+    expect(resources.listShoppingSessions).toHaveBeenCalledWith("completed", expect.any(Number));
+    expect(resources.listShoppingSessions).toHaveBeenCalledWith("canceled", expect.any(Number));
+    expect(resources.listShoppingSessions).not.toHaveBeenCalledWith(undefined, expect.any(Number));
   });
 
   it("creates a purchase location inline", async () => {
