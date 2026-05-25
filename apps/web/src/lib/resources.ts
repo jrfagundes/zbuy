@@ -32,6 +32,14 @@ export interface PurchaseHistoryItemDto extends ShoppingSessionItemDto {
   };
 }
 
+type EditableShoppingSessionItemRequest = Omit<UpdateShoppingSessionItemRequest, "status"> & {
+  status?: "pending" | "bought" | "not_found";
+};
+
+type PurchaseHistoryQueryFilters = Omit<PurchaseHistoryFilters, "itemStatus"> & {
+  itemStatus?: "bought" | "not_found" | "unprocessed";
+};
+
 function buildQuery<T extends object>(params: T) {
   const query = new URLSearchParams();
   for (const [key, value] of Object.entries(params) as Array<[string, string | number | boolean | null | undefined]>) {
@@ -175,7 +183,7 @@ export function getShoppingSession(id: string) {
 export function updateShoppingSessionItem(
   sessionId: string,
   itemId: string,
-  input: UpdateShoppingSessionItemRequest
+  input: EditableShoppingSessionItemRequest
 ) {
   return apiRequest<ShoppingSessionDetailDto>(`/shopping-sessions/${sessionId}/items/${itemId}`, {
     method: "PATCH",
@@ -198,7 +206,7 @@ export function createContinuationList(sessionId: string, input: CreateContinuat
   });
 }
 
-export function listPurchaseHistorySessions(filters: PurchaseHistoryFilters = {}) {
+export function listPurchaseHistorySessions(filters: PurchaseHistoryQueryFilters = {}) {
   const params = buildQuery(filters);
   return apiRequest<{ shoppingSessions: ShoppingSessionSummaryDto[] }>(`/purchase-history/sessions${params}`);
 }
@@ -207,7 +215,7 @@ export function getPurchaseHistorySession(id: string) {
   return apiRequest<ShoppingSessionDetailDto>(`/purchase-history/sessions/${id}`);
 }
 
-export function listPurchaseHistoryItems(filters: PurchaseHistoryFilters = {}) {
+export function listPurchaseHistoryItems(filters: PurchaseHistoryQueryFilters = {}) {
   const params = buildQuery(filters);
   return apiRequest<{ purchaseHistoryItems: PurchaseHistoryItemDto[] }>(`/purchase-history/items${params}`);
 }
