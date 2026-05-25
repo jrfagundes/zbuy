@@ -46,6 +46,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   const [finishing, setFinishing] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const sessionActionRunning = finishing || canceling;
 
   useEffect(() => {
     setSession(initialSession);
@@ -64,6 +65,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   const unprocessedItems = session.items.filter((item) => item.status === "unprocessed");
 
   async function updateItem(item: ShoppingSessionItemDto, input: BoardUpdate) {
+    if (savingId) return;
+
     setSavingId(item.id);
     setMessage(null);
     try {
@@ -77,6 +80,11 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   }
 
   function onDragStart(event: DragEvent<HTMLElement>, item: ShoppingSessionItemDto) {
+    if (savingId) {
+      event.preventDefault();
+      return;
+    }
+
     event.dataTransfer.setData("text/plain", item.id);
     event.dataTransfer.effectAllowed = "move";
     setDraggedItemId(item.id);
@@ -89,6 +97,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
 
   async function onDrop(event: DragEvent<HTMLElement>, targetStatus: BoardStatus) {
     event.preventDefault();
+    if (savingId) return;
+
     const itemId = event.dataTransfer.getData("text/plain") || draggedItemId;
     setDraggedItemId(null);
     if (!itemId) return;
@@ -99,6 +109,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   }
 
   async function savePrice(item: ShoppingSessionItemDto) {
+    if (savingId) return;
+
     const currentValue = item.actualPrice ?? "";
     const nextValue = (priceDrafts[item.id] ?? currentValue).trim();
     if (nextValue === currentValue) return;
@@ -106,6 +118,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   }
 
   async function saveNotes(item: ShoppingSessionItemDto) {
+    if (savingId) return;
+
     const currentValue = item.notes ?? "";
     const nextValue = (noteDrafts[item.id] ?? currentValue).trim();
     if (nextValue === currentValue) return;
@@ -113,6 +127,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   }
 
   async function completeSession() {
+    if (sessionActionRunning) return;
+
     setFinishing(true);
     setMessage(null);
     try {
@@ -126,6 +142,8 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   }
 
   async function cancelSession() {
+    if (sessionActionRunning) return;
+
     setCanceling(true);
     setMessage(null);
     try {
@@ -141,10 +159,10 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
   return (
     <section className="detail-stack">
       <div className="form-actions">
-        <button type="button" className="button primary" onClick={() => void completeSession()} disabled={finishing}>
+        <button type="button" className="button primary" onClick={() => void completeSession()} disabled={sessionActionRunning}>
           Finalizar compra
         </button>
-        <button type="button" className="button danger" onClick={() => void cancelSession()} disabled={canceling}>
+        <button type="button" className="button danger" onClick={() => void cancelSession()} disabled={sessionActionRunning}>
           Cancelar sessão
         </button>
       </div>
@@ -170,7 +188,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
               const priceValue = priceDrafts[item.id] ?? item.actualPrice ?? "";
               const notesValue = noteDrafts[item.id] ?? item.notes ?? "";
               return (
-                <article className="session-card" key={item.id} draggable onDragStart={(event) => onDragStart(event, item)}>
+                <article className="session-card" key={item.id} draggable={!savingId} onDragStart={(event) => onDragStart(event, item)}>
                   <div>
                     <strong>{item.snapshotProductName}</strong>
                     <p className="muted">
@@ -190,6 +208,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                       <input
                         inputMode="decimal"
                         value={priceValue}
+                        disabled={Boolean(savingId)}
                         onBlur={() => void savePrice(item)}
                         onChange={(event) => setPriceDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
                       />
@@ -200,6 +219,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                     Notas de {item.snapshotProductName}
                     <input
                       value={notesValue}
+                      disabled={Boolean(savingId)}
                       onBlur={() => void saveNotes(item)}
                       onChange={(event) => setNoteDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
                     />
@@ -211,7 +231,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                         type="button"
                         className="button secondary"
                         onClick={() => void updateItem(item, { status: "bought" })}
-                        disabled={savingId === item.id}
+                        disabled={Boolean(savingId)}
                       >
                         Marcar {item.snapshotProductName} como comprado
                       </button>
@@ -221,7 +241,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                         type="button"
                         className="button secondary"
                         onClick={() => void updateItem(item, { status: "not_found" })}
-                        disabled={savingId === item.id}
+                        disabled={Boolean(savingId)}
                       >
                         Marcar {item.snapshotProductName} como não encontrado
                       </button>
@@ -231,7 +251,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                         type="button"
                         className="button secondary"
                         onClick={() => void updateItem(item, { status: "pending" })}
-                        disabled={savingId === item.id}
+                        disabled={Boolean(savingId)}
                       >
                         Voltar {item.snapshotProductName} para pendente
                       </button>

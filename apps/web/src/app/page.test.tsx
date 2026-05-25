@@ -367,6 +367,14 @@ describe("purchase session detail", () => {
     return session;
   }
 
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((done) => {
+      resolve = done;
+    });
+    return { promise, resolve };
+  }
+
   it("renders pending, bought, and not found columns", async () => {
     mockSession();
 
@@ -433,6 +441,29 @@ describe("purchase session detail", () => {
     expect(routerPush).toHaveBeenCalledWith(`/history/${session.id}`);
   });
 
+  it("disables complete and cancel actions while a session action is running", async () => {
+    const session = mockSession();
+    const completeRequest = deferred<ShoppingSessionDetailDto>();
+    vi.mocked(resources.completeShoppingSession).mockReturnValue(completeRequest.promise);
+
+    render(<PurchaseSessionPage />);
+
+    const completeButton = await screen.findByRole("button", { name: "Finalizar compra" });
+    const cancelButton = screen.getByRole("button", { name: "Cancelar sessão" });
+    fireEvent.click(completeButton);
+
+    await waitFor(() => expect(completeButton).toBeDisabled());
+    expect(cancelButton).toBeDisabled();
+
+    fireEvent.click(cancelButton);
+    expect(resources.cancelShoppingSession).not.toHaveBeenCalled();
+
+    await act(async () => {
+      completeRequest.resolve({ ...session, status: "completed" });
+      await completeRequest.promise;
+    });
+  });
+
   it("cancels the shopping session through the API", async () => {
     const session = mockSession();
 
@@ -442,6 +473,35 @@ describe("purchase session detail", () => {
 
     await waitFor(() => expect(resources.cancelShoppingSession).toHaveBeenCalledWith(session.id));
     expect(routerPush).toHaveBeenCalledWith("/purchases");
+  });
+
+  it("blocks other item actions while an item update is running", async () => {
+    const anotherPendingItem: ShoppingSessionItemDto = {
+      ...pendingItem,
+      id: "item-pending-2",
+      snapshotProductName: "Açúcar",
+      sortOrder: 1
+    };
+    mockSession(makeSession([pendingItem, anotherPendingItem]));
+    const updateRequest = deferred<ShoppingSessionDetailDto>();
+    vi.mocked(resources.updateShoppingSessionItem).mockReturnValue(updateRequest.promise);
+
+    render(<PurchaseSessionPage />);
+
+    const firstButton = await screen.findByRole("button", { name: "Marcar Arroz como comprado" });
+    const secondButton = screen.getByRole("button", { name: "Marcar Açúcar como comprado" });
+    fireEvent.click(firstButton);
+
+    await waitFor(() => expect(firstButton).toBeDisabled());
+    expect(secondButton).toBeDisabled();
+
+    fireEvent.click(secondButton);
+    expect(resources.updateShoppingSessionItem).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      updateRequest.resolve(makeSession([{ ...pendingItem, status: "bought" as const }, anotherPendingItem]));
+      await updateRequest.promise;
+    });
   });
 });
 
