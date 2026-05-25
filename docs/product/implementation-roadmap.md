@@ -35,6 +35,8 @@ This roadmap translates the approved prototype design into future implementation
 
 ## Phase 3: Lists And Products
 
+Status: completed.
+
 ### Deliverables
 
 - Product catalog with create, edit, archive, search, category, brand, notes, default unit, and optional estimated price support.
@@ -49,6 +51,8 @@ This roadmap translates the approved prototype design into future implementation
 - Duplicated lists can be changed independently from their source list.
 
 ## Phase 4: Shopping Sessions And History
+
+Status: active implementation phase.
 
 ### Deliverables
 

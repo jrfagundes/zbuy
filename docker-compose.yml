@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: zbuy
+      POSTGRES_PASSWORD: zbuy
+      POSTGRES_DB: zbuy
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zbuy -d zbuy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    command: corepack pnpm --filter @zbuy/api dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      signoz:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      API_PORT: 3001
+      WEB_ORIGIN: http://localhost:3000,http://127.0.0.1:3000
+      DATABASE_URL: postgresql://zbuy:zbuy@postgres:5432/zbuy?schema=public
+      SESSION_COOKIE_NAME: zbuy_session
+      OTEL_SERVICE_NAME: zbuy-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://signoz:4318
+      OTEL_ENVIRONMENT: local
+      LOG_LEVEL: info
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/workspace
+
+  web:
+    image: node:22-bookworm-slim
+    working_dir: /workspace
+    command: corepack pnpm --filter @zbuy/web dev
+    depends_on:
+      - api
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    profiles:
+      - web
+    volumes:
+      - .:/workspace
+
+  signoz:
+    image: signoz/signoz:v0.122.0
+    environment:
+      SIGNOZ_LOG_LEVEL: info
+    ports:
+      - "${SIGNOZ_PORT:-3301}:8080"
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - signoz-data:/var/lib/signoz
+
+volumes:
+  postgres-data:
+  signoz-data:

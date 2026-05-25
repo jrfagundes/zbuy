@@ -1,2 +1,10 @@
 .superpowers/
 .worktrees/
+.codex-logs/
+node_modules/
+.pnpm-store/
+dist/
+.next/
+tsconfig.tsbuildinfo
+test-results/
+playwright-report/

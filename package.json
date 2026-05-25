@@ -1,0 +1,18 @@
+{
+  "name": "zbuy",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter @zbuy/api --filter @zbuy/web dev",
+    "build": "corepack pnpm --recursive build",
+    "lint": "corepack pnpm --recursive lint",
+    "test": "corepack pnpm --filter @zbuy/shared --filter @zbuy/api --filter @zbuy/web test",
+    "typecheck": "corepack pnpm --recursive typecheck",
+    "db:migrate": "corepack pnpm --filter @zbuy/api prisma:migrate",
+    "db:generate": "corepack pnpm --filter @zbuy/api prisma:generate",
+    "e2e": "corepack pnpm --filter @zbuy/e2e test"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  }
+}
