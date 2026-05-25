@@ -1,6 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
-import type { ShoppingSessionDetailDto, ShoppingSessionItemDto } from "@zbuy/shared";
+import type {
+  PurchaseLocationDto,
+  ShoppingListSummaryDto,
+  ShoppingSessionDetailDto,
+  ShoppingSessionItemDto,
+  ShoppingSessionSummaryDto
+} from "@zbuy/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AccountPage from "./account/page";
@@ -10,6 +16,8 @@ import LoginPage from "./page";
 import ProductsPage from "./products/page";
 import PurchasesPage from "./purchases/page";
 import PurchaseSessionPage from "./purchases/[id]/page";
+import HistoryDetailPage from "./history/[id]/page";
+import HistoryPage from "./history/page";
 import ResetPasswordPage from "./reset-password/page";
 import SignUpPage from "./signup/page";
 import * as resources from "../lib/resources";
@@ -502,6 +510,186 @@ describe("purchase session detail", () => {
       updateRequest.resolve(makeSession([{ ...pendingItem, status: "bought" as const }, anotherPendingItem]));
       await updateRequest.promise;
     });
+  });
+});
+
+describe("purchase history screens", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    routerPush.mockClear();
+    routeParams.current = { id: "list-1" };
+  });
+
+  const location: PurchaseLocationDto = {
+    id: "loc-1",
+    type: "physical",
+    name: "Mercado Central",
+    address: null,
+    city: null,
+    websiteOrApp: null,
+    notes: null,
+    archivedAt: null,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const shoppingList: ShoppingListSummaryDto = {
+    id: "list-1",
+    name: "Compra semanal",
+    description: "Mercado",
+    status: "active",
+    duplicatedFromListId: null,
+    itemCount: 3,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const summarySession: ShoppingSessionSummaryDto = {
+    id: "session-history",
+    sourceListId: shoppingList.id,
+    sourceListName: shoppingList.name,
+    purchaseLocation: location,
+    context: "physical",
+    status: "completed",
+    startedAt: "2026-05-24T10:00:00.000Z",
+    completedAt: "2026-05-24T11:00:00.000Z",
+    canceledAt: null,
+    knownTotal: "30.50",
+    boughtItemsWithoutPriceCount: 2,
+    itemCounts: { pending: 0, bought: 3, notFound: 1, unprocessed: 1 }
+  };
+
+  const boughtItem: ShoppingSessionItemDto = {
+    id: "item-bought-history",
+    sourceProductId: "product-1",
+    sourceListItemId: "list-item-1",
+    snapshotProductName: "Arroz",
+    snapshotCategoryLabel: "Mercearia",
+    snapshotBrand: null,
+    quantity: "2",
+    unitId: "unit-kg",
+    snapshotUnitName: "Kilogram",
+    snapshotUnitAbbreviation: "kg",
+    expectedPrice: "20.00",
+    actualPrice: "18.50",
+    status: "bought",
+    priority: "normal",
+    notes: null,
+    sortOrder: 0
+  };
+
+  const notFoundItem: ShoppingSessionItemDto = {
+    ...boughtItem,
+    id: "item-not-found-history",
+    snapshotProductName: "Azeite",
+    expectedPrice: "24.00",
+    actualPrice: null,
+    status: "not_found",
+    sortOrder: 1
+  };
+
+  const unprocessedItem: ShoppingSessionItemDto = {
+    ...boughtItem,
+    id: "item-unprocessed-history",
+    snapshotProductName: "Café",
+    expectedPrice: null,
+    actualPrice: null,
+    status: "unprocessed",
+    sortOrder: 2
+  };
+
+  function mockHistoryList(sessions: ShoppingSessionSummaryDto[] = [summarySession]) {
+    vi.spyOn(resources, "listPurchaseLocations").mockResolvedValue({ purchaseLocations: [location] });
+    vi.spyOn(resources, "listShoppingLists").mockResolvedValue({ shoppingLists: [shoppingList] });
+    vi.spyOn(resources, "listPurchaseHistorySessions").mockResolvedValue({ shoppingSessions: sessions });
+  }
+
+  function mockHistoryDetail(session: ShoppingSessionDetailDto = { ...summarySession, items: [boughtItem, notFoundItem, unprocessedItem] }) {
+    routeParams.current = { id: session.id };
+    vi.spyOn(resources, "getPurchaseHistorySession").mockResolvedValue(session);
+    vi.spyOn(resources, "createContinuationList").mockResolvedValue({
+      ...shoppingList,
+      id: "list-continuation",
+      name: "Continuação",
+      items: []
+    });
+  }
+
+  it("calls the history API with advanced filters", async () => {
+    mockHistoryList();
+
+    render(<HistoryPage />);
+
+    fireEvent.change(await screen.findByLabelText("Data inicial"), { target: { value: "2026-05-01" } });
+    fireEvent.change(screen.getByLabelText("Data final"), { target: { value: "2026-05-24" } });
+    fireEvent.change(screen.getByLabelText("Local"), { target: { value: "loc-1" } });
+    fireEvent.change(screen.getByLabelText("Tipo de local"), { target: { value: "physical" } });
+    fireEvent.change(screen.getByLabelText("Produto"), { target: { value: "arroz" } });
+    fireEvent.change(screen.getByLabelText("Lista origem"), { target: { value: "list-1" } });
+    fireEvent.change(screen.getByLabelText("Status do item"), { target: { value: "bought" } });
+    fireEvent.change(screen.getByLabelText("Preço mínimo"), { target: { value: "10.00" } });
+    fireEvent.change(screen.getByLabelText("Preço máximo"), { target: { value: "50.00" } });
+    fireEvent.click(screen.getByLabelText("Somente comprados sem preço"));
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar filtros" }));
+
+    await waitFor(() =>
+      expect(resources.listPurchaseHistorySessions).toHaveBeenLastCalledWith({
+        dateFrom: "2026-05-01",
+        dateTo: "2026-05-24",
+        locationId: "loc-1",
+        locationType: "physical",
+        productQuery: "arroz",
+        sourceListId: "list-1",
+        itemStatus: "bought",
+        minPrice: "10.00",
+        maxPrice: "50.00",
+        withoutPrice: true
+      })
+    );
+  });
+
+  it("shows known totals and missing price warnings in history rows", async () => {
+    mockHistoryList();
+
+    render(<HistoryPage />);
+
+    expect(await screen.findByRole("link", { name: "Ver detalhes de Compra semanal" })).toBeInTheDocument();
+    expect(screen.getByText("Total conhecido: R$ 30.50")).toBeInTheDocument();
+    expect(screen.getByText("2 comprado(s) sem preço real.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver detalhes de Compra semanal" })).toHaveAttribute(
+      "href",
+      "/history/session-history"
+    );
+  });
+
+  it("groups bought, not found, and unprocessed items in history detail", async () => {
+    mockHistoryDetail();
+
+    render(<HistoryDetailPage />);
+
+    expect(await screen.findByRole("heading", { name: "Comprados" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Não encontrados" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Não processados" })).toBeInTheDocument();
+    expect(screen.getByText("Arroz")).toBeInTheDocument();
+    expect(screen.getByText("Azeite")).toBeInTheDocument();
+    expect(screen.getByText("Café")).toBeInTheDocument();
+    expect(screen.getByText("Real: R$ 18.50")).toBeInTheDocument();
+    expect(screen.getByText("Esperado: R$ 24.00")).toBeInTheDocument();
+  });
+
+  it("creates a continuation list from history detail", async () => {
+    mockHistoryDetail();
+
+    render(<HistoryDetailPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Criar lista de continuação" }));
+
+    await waitFor(() => expect(resources.createContinuationList).toHaveBeenCalledWith("session-history", {}));
+    expect(await screen.findByRole("link", { name: "Abrir lista Continuação" })).toHaveAttribute(
+      "href",
+      "/lists/list-continuation"
+    );
   });
 });
 
