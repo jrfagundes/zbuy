@@ -1,18 +1,22 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AccountPage from "./account/page";
 import ListDetailPage from "./lists/[id]/page";
 import ListsPage from "./lists/page";
 import LoginPage from "./page";
 import ProductsPage from "./products/page";
+import PurchasesPage from "./purchases/page";
 import ResetPasswordPage from "./reset-password/page";
 import SignUpPage from "./signup/page";
+import * as resources from "../lib/resources";
+
+const routerPush = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "list-1" }),
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({ push: routerPush })
 }));
 
 describe("authentication screens", () => {
@@ -59,6 +63,139 @@ describe("authentication screens", () => {
     render(<AccountPage />);
 
     expect(await screen.findByText("Conta indisponível")).toBeInTheDocument();
+  });
+});
+
+describe("purchase dashboard", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    routerPush.mockClear();
+  });
+
+  const location = {
+    id: "loc-1",
+    type: "physical" as const,
+    name: "Mercado Central",
+    address: null,
+    city: null,
+    websiteOrApp: null,
+    notes: null,
+    archivedAt: null,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const shoppingList = {
+    id: "list-1",
+    name: "Compra semanal",
+    description: "Mercado",
+    status: "active" as const,
+    duplicatedFromListId: null,
+    itemCount: 2,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const activeSession = {
+    id: "session-active",
+    sourceListId: shoppingList.id,
+    sourceListName: shoppingList.name,
+    purchaseLocation: location,
+    context: "physical" as const,
+    status: "active" as const,
+    startedAt: "2026-05-24T10:00:00.000Z",
+    completedAt: null,
+    canceledAt: null,
+    knownTotal: "0.00",
+    boughtItemsWithoutPriceCount: 0,
+    itemCounts: { pending: 2, bought: 0, notFound: 0, unprocessed: 0 },
+    items: []
+  };
+
+  const completedSession = {
+    ...activeSession,
+    id: "session-completed",
+    status: "completed" as const,
+    completedAt: "2026-05-24T11:00:00.000Z",
+    itemCounts: { pending: 0, bought: 2, notFound: 0, unprocessed: 0 }
+  };
+
+  function mockPurchaseResources(active: typeof activeSession | null = null) {
+    vi.spyOn(resources, "getActiveShoppingSession").mockResolvedValue(active);
+    vi.spyOn(resources, "listShoppingSessions").mockResolvedValue({ shoppingSessions: [completedSession] });
+    vi.spyOn(resources, "listShoppingLists").mockResolvedValue({ shoppingLists: [shoppingList] });
+    vi.spyOn(resources, "listPurchaseLocations").mockResolvedValue({ purchaseLocations: [location] });
+    vi.spyOn(resources, "cancelShoppingSession").mockResolvedValue({
+      ...activeSession,
+      status: "canceled",
+      canceledAt: "2026-05-24T10:30:00.000Z"
+    });
+    vi.spyOn(resources, "createPurchaseLocation").mockResolvedValue({ ...location, id: "loc-2", name: "Atacado Norte" });
+    vi.spyOn(resources, "startShoppingSession").mockResolvedValue({ ...activeSession, id: "session-new" });
+  }
+
+  it("shows the active session with continue and cancel actions", async () => {
+    mockPurchaseResources(activeSession);
+
+    render(<PurchasesPage />);
+
+    expect(await screen.findByText("Sessão ativa")).toBeInTheDocument();
+    expect(screen.getAllByText("Mercado Central").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Compra semanal").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("active").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Continuar compra" })).toHaveAttribute("href", "/purchases/session-active");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar sessão" }));
+
+    await waitFor(() => expect(resources.cancelShoppingSession).toHaveBeenCalledWith("session-active"));
+  });
+
+  it("lists reusable shopping lists and locations in the start form", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    expect(await screen.findByLabelText("Lista")).toBeInTheDocument();
+    expect(screen.getByLabelText("Tipo")).toBeInTheDocument();
+    expect(screen.getByLabelText("Local")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Compra semanal" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument();
+  });
+
+  it("creates a purchase location inline", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.click(screen.getByRole("button", { name: "Novo local" }));
+    fireEvent.change(screen.getByLabelText("Nome do local"), { target: { value: "Atacado Norte" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar local" }));
+
+    await waitFor(() =>
+      expect(resources.createPurchaseLocation).toHaveBeenCalledWith({ type: "physical", name: "Atacado Norte" })
+    );
+  });
+
+  it("starts a shopping session from the selected list and location", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.change(screen.getByLabelText("Lista"), { target: { value: "list-1" } });
+    fireEvent.change(screen.getByLabelText("Local"), { target: { value: "loc-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Iniciar compra" }));
+
+    await waitFor(() =>
+      expect(resources.startShoppingSession).toHaveBeenCalledWith({
+        sourceListId: "list-1",
+        purchaseLocationId: "loc-1",
+        context: "physical"
+      })
+    );
+    expect(routerPush).toHaveBeenCalledWith("/purchases/session-new");
   });
 });
 
