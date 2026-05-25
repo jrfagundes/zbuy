@@ -1,14 +1,47 @@
 import type {
+  CreateContinuationListRequest,
   ProductDto,
+  PurchaseHistoryFilters,
+  PurchaseLocationDto,
+  PurchaseLocationType,
   ReorderShoppingListItemsRequest,
   ShoppingListDetailDto,
   ShoppingListSummaryDto,
+  ShoppingSessionDetailDto,
+  ShoppingSessionItemDto,
+  ShoppingSessionStatus,
+  ShoppingSessionSummaryDto,
+  StartShoppingSessionRequest,
   UnitDto,
   UpsertProductRequest,
+  UpsertPurchaseLocationRequest,
+  UpdateShoppingSessionItemRequest,
   UpsertShoppingListItemRequest,
   UpsertShoppingListRequest
 } from "@zbuy/shared";
 import { apiRequest } from "./api";
+
+export interface PurchaseHistoryItemDto extends ShoppingSessionItemDto {
+  session: {
+    id: string;
+    completedAt: string;
+    context: "physical" | "online";
+    sourceListId: string;
+    sourceListName: string;
+    purchaseLocation: PurchaseLocationDto;
+  };
+}
+
+function buildQuery<T extends object>(params: T) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params) as Array<[string, string | number | boolean | null | undefined]>) {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  }
+  const queryString = query.toString();
+  return queryString ? `?${queryString}` : "";
+}
 
 export function listUnits() {
   return apiRequest<{ units: UnitDto[] }>("/units");
@@ -94,4 +127,87 @@ export function reorderShoppingListItems(listId: string, input: ReorderShoppingL
     method: "PATCH",
     body: JSON.stringify(input)
   });
+}
+
+export function listPurchaseLocations(type?: PurchaseLocationType, query?: string) {
+  const params = buildQuery({ type, query: query?.trim() });
+  return apiRequest<{ purchaseLocations: PurchaseLocationDto[] }>(`/purchase-locations${params}`);
+}
+
+export function createPurchaseLocation(input: UpsertPurchaseLocationRequest) {
+  return apiRequest<PurchaseLocationDto>("/purchase-locations", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function updatePurchaseLocation(id: string, input: UpsertPurchaseLocationRequest) {
+  return apiRequest<PurchaseLocationDto>(`/purchase-locations/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input)
+  });
+}
+
+export function archivePurchaseLocation(id: string) {
+  return apiRequest<PurchaseLocationDto>(`/purchase-locations/${id}/archive`, { method: "POST" });
+}
+
+export function listShoppingSessions(status?: ShoppingSessionStatus, limit?: number) {
+  const params = buildQuery({ status, limit });
+  return apiRequest<{ shoppingSessions: ShoppingSessionSummaryDto[] }>(`/shopping-sessions${params}`);
+}
+
+export function getActiveShoppingSession() {
+  return apiRequest<ShoppingSessionDetailDto | null>("/shopping-sessions/active");
+}
+
+export function startShoppingSession(input: StartShoppingSessionRequest) {
+  return apiRequest<ShoppingSessionDetailDto>("/shopping-sessions", {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function getShoppingSession(id: string) {
+  return apiRequest<ShoppingSessionDetailDto>(`/shopping-sessions/${id}`);
+}
+
+export function updateShoppingSessionItem(
+  sessionId: string,
+  itemId: string,
+  input: UpdateShoppingSessionItemRequest
+) {
+  return apiRequest<ShoppingSessionDetailDto>(`/shopping-sessions/${sessionId}/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input)
+  });
+}
+
+export function completeShoppingSession(id: string) {
+  return apiRequest<ShoppingSessionDetailDto>(`/shopping-sessions/${id}/complete`, { method: "POST" });
+}
+
+export function cancelShoppingSession(id: string) {
+  return apiRequest<ShoppingSessionDetailDto>(`/shopping-sessions/${id}/cancel`, { method: "POST" });
+}
+
+export function createContinuationList(sessionId: string, input: CreateContinuationListRequest) {
+  return apiRequest<ShoppingListDetailDto>(`/shopping-sessions/${sessionId}/continuation-list`, {
+    method: "POST",
+    body: JSON.stringify(input)
+  });
+}
+
+export function listPurchaseHistorySessions(filters: PurchaseHistoryFilters = {}) {
+  const params = buildQuery(filters);
+  return apiRequest<{ shoppingSessions: ShoppingSessionSummaryDto[] }>(`/purchase-history/sessions${params}`);
+}
+
+export function getPurchaseHistorySession(id: string) {
+  return apiRequest<ShoppingSessionDetailDto>(`/purchase-history/sessions/${id}`);
+}
+
+export function listPurchaseHistoryItems(filters: PurchaseHistoryFilters = {}) {
+  const params = buildQuery(filters);
+  return apiRequest<{ purchaseHistoryItems: PurchaseHistoryItemDto[] }>(`/purchase-history/items${params}`);
 }

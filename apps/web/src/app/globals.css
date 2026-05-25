@@ -502,6 +502,95 @@ textarea {
   justify-content: flex-end;
 }
 
+.purchase-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.purchase-summary > * {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  background: #fbfcf9;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 16px;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.kanban-column {
+  display: grid;
+  min-width: 220px;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8faf5;
+  padding: 14px;
+}
+
+.kanban-column h2,
+.kanban-column h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.session-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(23, 32, 27, 0.07);
+}
+
+.session-card strong {
+  color: var(--text);
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.history-filters label {
+  display: grid;
+  gap: 7px;
+  color: #344038;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.metric-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.status-pill {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 28px;
+  align-items: center;
+  border: 1px solid rgba(31, 122, 77, 0.24);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: #edf6ea;
+  color: var(--accent-strong);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 @media (max-width: 840px) {
   .auth-shell {
     grid-template-columns: 1fr;
@@ -539,7 +628,7 @@ textarea {
   }
 
   .app-nav {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
     margin-top: 18px;
   }
 
@@ -548,7 +637,9 @@ textarea {
   }
 
   .resource-grid,
-  .resource-form {
+  .resource-form,
+  .purchase-summary,
+  .history-filters {
     grid-template-columns: 1fr;
   }
 

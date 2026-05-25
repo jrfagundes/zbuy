@@ -17,6 +17,8 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
           <Link href="/account">Conta</Link>
           <Link href="/products">Produtos</Link>
           <Link href="/lists">Listas</Link>
+          <Link href="/purchases">Compras</Link>
+          <Link href="/history">Histórico</Link>
         </nav>
       </aside>
       <section className="app-main">
