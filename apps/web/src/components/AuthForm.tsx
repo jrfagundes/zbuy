@@ -74,7 +74,7 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <form className="auth-form" onSubmit={submit}>
+    <form className="auth-form" method="post" onSubmit={submit}>
       {mode === "signup" ? (
         <label>
           Nome

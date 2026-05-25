@@ -166,7 +166,7 @@ export function listShoppingSessions(status?: ShoppingSessionStatus, limit?: num
 }
 
 export function getActiveShoppingSession() {
-  return apiRequest<ShoppingSessionDetailDto | null>("/shopping-sessions/active");
+  return apiRequest<ShoppingSessionDetailDto | null>("/shopping-sessions/active", undefined, { emptyBodyAsNull: true });
 }
 
 export function startShoppingSession(input: StartShoppingSessionRequest) {

@@ -431,11 +431,12 @@ describe("purchase session detail", () => {
 
     const priceInput = await screen.findByLabelText("Preço real de Feijão");
     fireEvent.change(priceInput, { target: { value: "9.25" } });
-    fireEvent.blur(priceInput);
+    fireEvent.click(screen.getByRole("button", { name: "Salvar preço de Feijão" }));
 
     await waitFor(() =>
       expect(resources.updateShoppingSessionItem).toHaveBeenCalledWith(session.id, boughtItem.id, { actualPrice: "9.25" })
     );
+    expect(resources.updateShoppingSessionItem).toHaveBeenCalledTimes(1);
   });
 
   it("completes the shopping session through the API", async () => {
@@ -771,9 +772,11 @@ describe("product and list screens", () => {
       "fetch",
       vi.fn().mockImplementation(() => {
         const body = bodies.shift();
+        const text = JSON.stringify(body);
         return Promise.resolve({
           ok: true,
           status: 200,
+          text: async () => text,
           json: async () => body
         });
       })

@@ -77,7 +77,7 @@ export default function PurchaseSessionPage() {
               ) : null}
             </section>
 
-            <SessionBoard session={session} />
+            <SessionBoard session={session} onSessionChange={setSession} />
           </>
         ) : null}
       </section>

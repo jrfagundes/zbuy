@@ -36,7 +36,13 @@ function statusLabel(status: BoardStatus) {
   return "pendente";
 }
 
-export function SessionBoard({ session: initialSession }: { session: ShoppingSessionDetailDto }) {
+export function SessionBoard({
+  session: initialSession,
+  onSessionChange
+}: {
+  session: ShoppingSessionDetailDto;
+  onSessionChange?: (session: ShoppingSessionDetailDto) => void;
+}) {
   const router = useRouter();
   const [session, setSession] = useState(initialSession);
   const [priceDrafts, setPriceDrafts] = useState<Record<string, string>>({});
@@ -72,6 +78,7 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
     try {
       const updatedSession = await updateShoppingSessionItem(session.id, item.id, input);
       setSession(updatedSession);
+      onSessionChange?.(updatedSession);
     } catch {
       setMessage("Não foi possível atualizar o item.");
     } finally {
@@ -108,11 +115,11 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
     await updateItem(item, { status: targetStatus });
   }
 
-  async function savePrice(item: ShoppingSessionItemDto) {
+  async function savePrice(item: ShoppingSessionItemDto, draftValue?: string) {
     if (savingId) return;
 
     const currentValue = item.actualPrice ?? "";
-    const nextValue = (priceDrafts[item.id] ?? currentValue).trim();
+    const nextValue = (draftValue ?? priceDrafts[item.id] ?? currentValue).trim();
     if (nextValue === currentValue) return;
     await updateItem(item, { actualPrice: nextValue || null });
   }
@@ -203,16 +210,32 @@ export function SessionBoard({ session: initialSession }: { session: ShoppingSes
                   </div>
 
                   {column.status === "bought" ? (
-                    <label className="search-field">
-                      Preço real de {item.snapshotProductName}
-                      <input
-                        inputMode="decimal"
-                        value={priceValue}
+                    <form
+                      className="inline-save-form"
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        const form = new FormData(event.currentTarget);
+                        void savePrice(item, String(form.get("actualPrice") ?? ""));
+                      }}
+                    >
+                      <label className="search-field">
+                        Preço real de {item.snapshotProductName}
+                        <input
+                          name="actualPrice"
+                          inputMode="decimal"
+                          value={priceValue}
+                          disabled={Boolean(savingId)}
+                          onChange={(event) => setPriceDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
+                        />
+                      </label>
+                      <button
+                        type="submit"
+                        className="button secondary"
                         disabled={Boolean(savingId)}
-                        onBlur={() => void savePrice(item)}
-                        onChange={(event) => setPriceDrafts((current) => ({ ...current, [item.id]: event.target.value }))}
-                      />
-                    </label>
+                      >
+                        Salvar preço de {item.snapshotProductName}
+                      </button>
+                    </form>
                   ) : null}
 
                   <label className="search-field">
