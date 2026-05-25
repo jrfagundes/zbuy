@@ -148,7 +148,7 @@ function buildItemWhere(filters: PurchaseHistoryQueryDto): Prisma.ShoppingSessio
 
   const actualPrice = buildPriceRange(filters);
   if (actualPrice) {
-    and.push({ actualPrice });
+    and.push({ status: "bought" }, { actualPrice });
   }
 
   return and.length > 0 ? { AND: and } : {};

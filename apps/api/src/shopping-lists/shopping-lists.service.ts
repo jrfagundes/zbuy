@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReorderShoppingListItemsDto, UpsertShoppingListDto, UpsertShoppingListItemDto } from "./dto";
 import { toShoppingListDetailDto, toShoppingListSummaryDto } from "./shopping-list-response";
@@ -69,6 +69,10 @@ export class ShoppingListsService {
 
   async delete(ownerUserId: string, id: string) {
     await this.findOwnedList(ownerUserId, id);
+    const sessionCount = await this.prisma.shoppingSession.count({ where: { sourceListId: id } });
+    if (sessionCount > 0) {
+      throw new ConflictException("Shopping list with shopping sessions cannot be deleted");
+    }
     await this.prisma.shoppingList.delete({ where: { id } });
   }
 

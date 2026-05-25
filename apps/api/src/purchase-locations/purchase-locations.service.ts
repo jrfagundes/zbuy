@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpsertPurchaseLocationDto } from "./dto";
@@ -36,6 +36,10 @@ export class PurchaseLocationsService {
 
   async update(ownerUserId: string, id: string, dto: UpsertPurchaseLocationDto) {
     await this.findOwned(ownerUserId, id);
+    const sessionCount = await this.prisma.shoppingSession.count({ where: { purchaseLocationId: id } });
+    if (sessionCount > 0) {
+      throw new ConflictException("Purchase location with shopping history cannot be updated");
+    }
     const location = await this.prisma.purchaseLocation.update({
       where: { id },
       data: cleanLocationInput(ownerUserId, dto)

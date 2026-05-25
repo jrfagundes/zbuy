@@ -143,9 +143,19 @@ export class ShoppingSessionsService {
       actualPrice?: string | null;
       notes?: string | null;
     } = {};
-    if (dto.status !== undefined) data.status = dto.status;
+    const nextStatus = dto.status ?? item.status;
+    if (dto.status !== undefined) {
+      data.status = dto.status;
+      if (dto.status !== "bought") {
+        data.actualPrice = null;
+      }
+    }
     if (Object.prototype.hasOwnProperty.call(dto, "actualPrice")) {
-      data.actualPrice = cleanOptionalText(dto.actualPrice);
+      const actualPrice = cleanOptionalText(dto.actualPrice);
+      if (actualPrice && nextStatus !== "bought") {
+        throw new BadRequestException("Actual price can only be set for bought items");
+      }
+      data.actualPrice = actualPrice;
     }
     if (Object.prototype.hasOwnProperty.call(dto, "notes")) {
       data.notes = cleanOptionalText(dto.notes);
@@ -173,7 +183,7 @@ export class ShoppingSessionsService {
 
       await tx.shoppingSessionItem.updateMany({
         where: { sessionId: id, status: "pending" },
-        data: { status: "unprocessed" }
+        data: { status: "unprocessed", actualPrice: null }
       });
 
       const totals = calculateTotals(

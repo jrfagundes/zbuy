@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, NotFoundException } from "@nestjs/common";
 import type { PurchaseLocation } from "@prisma/client";
 import type { PrismaService } from "../prisma/prisma.service";
 import { PurchaseLocationsService } from "./purchase-locations.service";
@@ -70,7 +70,14 @@ function makePrismaMock(initialLocations: PurchaseLocationRecord[] = []) {
   };
 
   return {
-    prisma: { purchaseLocation } as unknown as PrismaService,
+    prisma: {
+      purchaseLocation,
+      shoppingSession: {
+        count: jest.fn(({ where }) =>
+          Promise.resolve(where.purchaseLocationId === "location-with-history" || where.purchaseLocationId === "location-1" ? 0 : 0)
+        )
+      }
+    } as unknown as PrismaService,
     purchaseLocation,
     locations
   };
@@ -196,5 +203,22 @@ describe("PurchaseLocationsService", () => {
         notes: null
       })
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it("does not allow updating a location that already has shopping sessions", async () => {
+    const { prisma } = makePrismaMock([makeLocation({ id: "location-with-history" })]);
+    jest.spyOn(prisma.shoppingSession, "count").mockResolvedValue(1);
+    const service = new PurchaseLocationsService(prisma);
+
+    await expect(
+      service.update("user-1", "location-with-history", {
+        type: "online",
+        name: "Online Market",
+        address: null,
+        city: null,
+        websiteOrApp: "app",
+        notes: null
+      })
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

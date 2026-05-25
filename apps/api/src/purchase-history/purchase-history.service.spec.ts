@@ -343,6 +343,17 @@ describe("PurchaseHistoryService", () => {
     expect(result.purchaseHistoryItems[0]).toMatchObject({ actualPrice: "12.5", expectedPrice: "11" });
   });
 
+  it("does not return non-bought items from price range filters even if legacy data has an actual price", async () => {
+    const data = makeMockData();
+    const notFoundItem = data.sessions[0]!.items.find((item) => item.id === "item-beans")!;
+    notFoundItem.actualPrice = decimal("12.00");
+    const service = makeService(data);
+
+    const result = await service.listItems("user-1", { minPrice: "10.00", maxPrice: "13.00" });
+
+    expect(result.purchaseHistoryItems.map((item) => item.id)).toEqual(["item-rice"]);
+  });
+
   it("isolates ownership across sessions, items, and session detail", async () => {
     const service = makeService();
 

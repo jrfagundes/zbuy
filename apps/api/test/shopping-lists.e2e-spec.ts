@@ -256,6 +256,9 @@ function addShoppingListFake(prisma: ReturnType<typeof createPrismaFake>) {
           .map((item) => ({ ...item, product: products.get(item.productId), unit: units.get(item.unitId) }))
       )
     },
+    shoppingSession: {
+      count: jest.fn().mockResolvedValue(0)
+    },
     $transaction: jest.fn(async (operationsOrCallback) => {
       if (typeof operationsOrCallback === "function") return operationsOrCallback(prisma);
       return Promise.all(operationsOrCallback);
@@ -440,6 +443,11 @@ describe("Shopping Lists API", () => {
       .set("Cookie", ownerCookie)
       .expect(200)
       .expect(({ body }) => expect(body.shoppingLists.some((list: { id: string }) => list.id === created.body.id)).toBe(true));
+
+    jest
+      .mocked((prisma as unknown as { shoppingSession: { count: jest.Mock } }).shoppingSession.count)
+      .mockResolvedValueOnce(1);
+    await request(app.getHttpServer()).delete(`/shopping-lists/${created.body.id}`).set("Cookie", ownerCookie).expect(409);
 
     await request(app.getHttpServer()).delete(`/shopping-lists/${duplicated.body.id}`).set("Cookie", otherCookie).expect(404);
     await request(app.getHttpServer()).delete(`/shopping-lists/${duplicated.body.id}`).set("Cookie", ownerCookie).expect(204);

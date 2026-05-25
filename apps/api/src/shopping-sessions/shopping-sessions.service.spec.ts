@@ -485,6 +485,24 @@ describe("ShoppingSessionsService", () => {
     expect(withPrice.boughtItemsWithoutPriceCount).toBe(0);
   });
 
+  it("allows actual price only for bought items and clears it when status changes away from bought", async () => {
+    const service = makeService();
+    const session = await service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" });
+    const itemId = session.items[0]!.id;
+
+    await expect(service.updateItem("user-1", session.id, itemId, { actualPrice: "12.50" })).rejects.toBeInstanceOf(
+      BadRequestException
+    );
+
+    const bought = await service.updateItem("user-1", session.id, itemId, { status: "bought", actualPrice: "12.50" });
+    expect(bought.items[0]).toMatchObject({ status: "bought", actualPrice: "12.5" });
+    expect(bought.knownTotal).toBe("12.5");
+
+    const notFound = await service.updateItem("user-1", session.id, itemId, { status: "not_found" });
+    expect(notFound.items[0]).toMatchObject({ status: "not_found", actualPrice: null });
+    expect(notFound.knownTotal).toBe("0");
+  });
+
   it("cancels an active session while keeping items unchanged", async () => {
     const service = makeService();
     const session = await service.start("user-1", { sourceListId: "list-1", purchaseLocationId: "location-1", context: "physical" });
