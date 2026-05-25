@@ -1058,7 +1058,7 @@ git commit -m "feat: add purchase history screens"
 - Modify: `tests/e2e/auth.spec.ts`
 - Modify: `tests/e2e/README.md`
 
-- [ ] **Step 1: Extend Playwright flow**
+- [x] **Step 1: Extend Playwright flow**
 
 Add steps after the phase 3 list setup:
 
@@ -1080,11 +1080,11 @@ await page.getByRole("button", { name: "Criar lista de continuação" }).click()
 
 Use the actual accessible names implemented in Tasks 7-9.
 
-- [ ] **Step 2: Document E2E prerequisites**
+- [x] **Step 2: Document E2E prerequisites**
 
 Update README to mention phase 4 migrations and local API/web requirement.
 
-- [ ] **Step 3: Run E2E**
+- [x] **Step 3: Run E2E**
 
 ```powershell
 corepack pnpm e2e
@@ -1092,7 +1092,7 @@ corepack pnpm e2e
 
 Expected: Playwright passes.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add tests/e2e/auth.spec.ts tests/e2e/README.md
