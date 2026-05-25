@@ -1107,7 +1107,7 @@ git commit -m "test: cover shopping session e2e flow"
 - Create: `docs/development/phase-4-shopping-sessions-history.md`
 - Modify: `docs/product/implementation-roadmap.md`
 
-- [ ] **Step 1: Add development documentation**
+- [x] **Step 1: Add development documentation**
 
 Create a guide covering:
 
@@ -1117,11 +1117,11 @@ Create a guide covering:
 - Known total semantics.
 - E2E command.
 
-- [ ] **Step 2: Update roadmap status**
+- [x] **Step 2: Update roadmap status**
 
 Mark phase 3 as completed and phase 4 as active implementation phase.
 
-- [ ] **Step 3: Final verification**
+- [x] **Step 3: Final verification**
 
 Run:
 
@@ -1135,7 +1135,7 @@ corepack pnpm e2e
 
 Expected: all commands exit with code `0`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add docs/development/phase-4-shopping-sessions-history.md docs/product/implementation-roadmap.md

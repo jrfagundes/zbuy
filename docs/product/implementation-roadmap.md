@@ -35,7 +35,7 @@ This roadmap translates the approved prototype design into future implementation
 
 ## Phase 3: Lists And Products
 
-Status: active implementation phase.
+Status: completed.
 
 ### Deliverables
 
@@ -51,6 +51,8 @@ Status: active implementation phase.
 - Duplicated lists can be changed independently from their source list.
 
 ## Phase 4: Shopping Sessions And History
+
+Status: active implementation phase.
 
 ### Deliverables
 
