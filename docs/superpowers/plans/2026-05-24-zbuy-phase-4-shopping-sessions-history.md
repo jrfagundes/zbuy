@@ -63,7 +63,7 @@
 - Modify: `packages/shared/src/index.ts`
 - Modify: `packages/shared/src/index.test.ts`
 
-- [ ] **Step 1: Add phase 4 DTO types**
+- [x] **Step 1: Add phase 4 DTO types**
 
 Append these exports to `packages/shared/src/index.ts` after the phase 3 types:
 
@@ -168,7 +168,7 @@ export interface CreateContinuationListRequest {
 }
 ```
 
-- [ ] **Step 2: Add compile-time DTO test**
+- [x] **Step 2: Add compile-time DTO test**
 
 Append this test to `packages/shared/src/index.test.ts`:
 
@@ -246,7 +246,7 @@ test("phase 4 DTO shapes support purchase locations and shopping sessions", () =
 });
 ```
 
-- [ ] **Step 3: Run shared tests**
+- [x] **Step 3: Run shared tests**
 
 Run:
 
@@ -256,7 +256,7 @@ corepack pnpm --filter @zbuy/shared test
 
 Expected: all shared package tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add packages/shared/src/index.ts packages/shared/src/index.test.ts
@@ -271,7 +271,7 @@ git commit -m "feat: add shopping session shared contracts"
 - Modify: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/<timestamp>_shopping_sessions_history/migration.sql`
 
-- [ ] **Step 1: Add enums and relations**
+- [x] **Step 1: Add enums and relations**
 
 Update `apps/api/prisma/schema.prisma` with:
 
@@ -330,7 +330,7 @@ model ShoppingListItem {
 }
 ```
 
-- [ ] **Step 2: Add phase 4 models**
+- [x] **Step 2: Add phase 4 models**
 
 Add the models:
 
@@ -410,7 +410,7 @@ model ShoppingSessionItem {
 }
 ```
 
-- [ ] **Step 3: Create migration**
+- [x] **Step 3: Create migration**
 
 Run:
 
@@ -421,7 +421,7 @@ corepack pnpm --filter @zbuy/api prisma:migrate -- --name shopping_sessions_hist
 
 Expected: Prisma creates a migration and applies it locally.
 
-- [ ] **Step 4: Regenerate Prisma client**
+- [x] **Step 4: Regenerate Prisma client**
 
 Run:
 
@@ -431,7 +431,7 @@ corepack pnpm --filter @zbuy/api prisma:generate
 
 Expected: Prisma client generated successfully.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add apps/api/prisma/schema.prisma apps/api/prisma/migrations
@@ -451,7 +451,7 @@ git commit -m "feat: add shopping session database schema"
 - Create: `apps/api/src/purchase-locations/purchase-locations.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Add DTOs**
+- [x] **Step 1: Add DTOs**
 
 Create `dto.ts`:
 
@@ -488,7 +488,7 @@ export class UpsertPurchaseLocationDto {
 }
 ```
 
-- [ ] **Step 2: Add response mapper**
+- [x] **Step 2: Add response mapper**
 
 Create `purchase-location-response.ts`:
 
@@ -522,7 +522,7 @@ export function toPurchaseLocationDto(location: {
 }
 ```
 
-- [ ] **Step 3: Implement service**
+- [x] **Step 3: Implement service**
 
 Create `purchase-locations.service.ts` with methods:
 
@@ -584,11 +584,11 @@ export class PurchaseLocationsService {
 
 `cleanLocationInput` must trim optional text and store empty optional values as `null`.
 
-- [ ] **Step 4: Add controller and module**
+- [x] **Step 4: Add controller and module**
 
 Create controller endpoints matching the spec and register `PurchaseLocationsModule` in `AppModule`.
 
-- [ ] **Step 5: Add API tests**
+- [x] **Step 5: Add API tests**
 
 Create tests proving:
 
@@ -597,7 +597,7 @@ Create tests proving:
 - User cannot access another user's location.
 - Archived locations are excluded from default list.
 
-- [ ] **Step 6: Run API tests**
+- [x] **Step 6: Run API tests**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test
@@ -605,7 +605,7 @@ corepack pnpm --filter @zbuy/api test
 
 Expected: API tests pass.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```powershell
 git add apps/api/src/purchase-locations apps/api/src/app.module.ts
@@ -625,7 +625,7 @@ git commit -m "feat: add purchase locations API"
 - Create: `apps/api/src/shopping-sessions/shopping-sessions.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Add DTOs**
+- [x] **Step 1: Add DTOs**
 
 Create DTOs for:
 
@@ -664,7 +664,7 @@ export class CreateContinuationListDto {
 }
 ```
 
-- [ ] **Step 2: Implement response mapper**
+- [x] **Step 2: Implement response mapper**
 
 Create a mapper that returns `ShoppingSessionSummaryDto` and `ShoppingSessionDetailDto`. It must:
 
@@ -674,7 +674,7 @@ Create a mapper that returns `ShoppingSessionSummaryDto` and `ShoppingSessionDet
 - Include purchase location DTO.
 - Include `sourceListName`.
 
-- [ ] **Step 3: Implement session start**
+- [x] **Step 3: Implement session start**
 
 `ShoppingSessionsService.start(ownerUserId, dto)` must:
 
@@ -705,7 +705,7 @@ The snapshot create shape must copy:
 }
 ```
 
-- [ ] **Step 4: Implement active/list/get**
+- [x] **Step 4: Implement active/list/get**
 
 Add:
 
@@ -715,7 +715,7 @@ Add:
 
 Default list ordering: newest `startedAt` first.
 
-- [ ] **Step 5: Implement item updates**
+- [x] **Step 5: Implement item updates**
 
 `updateItem(ownerUserId, sessionId, itemId, dto)` must:
 
@@ -725,7 +725,7 @@ Default list ordering: newest `startedAt` first.
 - Update `actualPrice` and `notes`.
 - Recalculate session `knownTotal` and `boughtItemsWithoutPriceCount`.
 
-- [ ] **Step 6: Implement completion**
+- [x] **Step 6: Implement completion**
 
 `complete(ownerUserId, id)` must:
 
@@ -735,7 +735,7 @@ Default list ordering: newest `startedAt` first.
 - Recalculate totals after status conversion.
 - Return session detail.
 
-- [ ] **Step 7: Implement cancellation**
+- [x] **Step 7: Implement cancellation**
 
 `cancel(ownerUserId, id)` must:
 
@@ -744,7 +744,7 @@ Default list ordering: newest `startedAt` first.
 - Keep items unchanged for audit.
 - Exclude canceled sessions from history module totals.
 
-- [ ] **Step 8: Implement continuation list**
+- [x] **Step 8: Implement continuation list**
 
 `createContinuationList(ownerUserId, sessionId, dto)` must:
 
@@ -755,7 +755,7 @@ Default list ordering: newest `startedAt` first.
 - Create list items using source product, quantity, unit, expected price, priority, notes, and sort order.
 - Exclude bought items.
 
-- [ ] **Step 9: Add controller and module**
+- [x] **Step 9: Add controller and module**
 
 Expose:
 
@@ -769,7 +769,7 @@ Expose:
 - `PATCH /shopping-sessions/:id/items/:itemId/status`
 - `POST /shopping-sessions/:id/continuation-list`
 
-- [ ] **Step 10: Add service tests**
+- [x] **Step 10: Add service tests**
 
 Tests must cover:
 
@@ -783,7 +783,7 @@ Tests must cover:
 - Cancel session.
 - Continuation list includes only not found and unprocessed.
 
-- [ ] **Step 11: Run tests and commit**
+- [x] **Step 11: Run tests and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test
@@ -803,7 +803,7 @@ git commit -m "feat: add shopping sessions API"
 - Create: `apps/api/src/purchase-history/purchase-history.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Add filter DTO**
+- [x] **Step 1: Add filter DTO**
 
 Create query DTO supporting:
 
@@ -820,7 +820,7 @@ maxPrice?: string;
 withoutPrice?: "true" | "false";
 ```
 
-- [ ] **Step 2: Implement session history list**
+- [x] **Step 2: Implement session history list**
 
 `listSessions(ownerUserId, filters)` must return only `completed` sessions and apply:
 
@@ -830,15 +830,15 @@ withoutPrice?: "true" | "false";
 - Source list id.
 - Item-level filters via `items: { some: ... }`.
 
-- [ ] **Step 3: Implement session detail**
+- [x] **Step 3: Implement session detail**
 
 `getSession(ownerUserId, id)` must return one completed session owned by the user. It must reject active/canceled sessions with `NotFoundException` for history endpoints.
 
-- [ ] **Step 4: Implement item history**
+- [x] **Step 4: Implement item history**
 
 `listItems(ownerUserId, filters)` must return flattened completed session items for product price research. It must include session date, location, source list, item status, actual price, and expected price.
 
-- [ ] **Step 5: Add controller/module/tests**
+- [x] **Step 5: Add controller/module/tests**
 
 Expose:
 
@@ -855,7 +855,7 @@ Tests must prove:
 - Price range applies only to actual price values.
 - Ownership isolation is enforced.
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test
@@ -872,7 +872,7 @@ git commit -m "feat: add purchase history API"
 - Modify: `apps/web/src/components/AppShell.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Add resource client functions**
+- [x] **Step 1: Add resource client functions**
 
 Add imports and functions for:
 
@@ -892,11 +892,11 @@ Add imports and functions for:
 - `getPurchaseHistorySession(id)`
 - `listPurchaseHistoryItems(filters)`
 
-- [ ] **Step 2: Add navigation**
+- [x] **Step 2: Add navigation**
 
 Add `Compras` and `Histórico` links to `AppShell`.
 
-- [ ] **Step 3: Add shared styles**
+- [x] **Step 3: Add shared styles**
 
 Add classes for:
 
@@ -908,7 +908,7 @@ Add classes for:
 - `.metric-row`
 - `.status-pill`
 
-- [ ] **Step 4: Run web checks and commit**
+- [x] **Step 4: Run web checks and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web typecheck
@@ -925,7 +925,7 @@ git commit -m "feat: add purchase web resources"
 - Create: `apps/web/src/app/purchases/StartPurchaseForm.tsx`
 - Modify: `apps/web/src/app/page.test.tsx`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Add tests that mock resource functions and verify:
 
@@ -934,7 +934,7 @@ Add tests that mock resource functions and verify:
 - Inline location creation calls `createPurchaseLocation`.
 - Start session calls `startShoppingSession`.
 
-- [ ] **Step 2: Implement dashboard page**
+- [x] **Step 2: Implement dashboard page**
 
 `/purchases` must:
 
@@ -945,7 +945,7 @@ Add tests that mock resource functions and verify:
 - Render start form only when there is no active session.
 - Render active session card when one exists.
 
-- [ ] **Step 3: Implement start form**
+- [x] **Step 3: Implement start form**
 
 The form must include:
 
@@ -955,7 +955,7 @@ The form must include:
 - Inline create location fields.
 - Submit button disabled until list and location exist.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
@@ -974,7 +974,7 @@ git commit -m "feat: add purchases start screen"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Test:
 
@@ -985,11 +985,11 @@ Test:
 - Complete session button calls API.
 - Cancel session button calls API.
 
-- [ ] **Step 2: Implement route page**
+- [x] **Step 2: Implement route page**
 
 `/purchases/[id]` loads session detail and renders `SessionBoard`.
 
-- [ ] **Step 3: Implement kanban board**
+- [x] **Step 3: Implement kanban board**
 
 `SessionBoard` must:
 
@@ -1001,11 +1001,11 @@ Test:
 - Provide notes input or compact edit action.
 - Refresh local session state after each API update.
 
-- [ ] **Step 4: Implement completion/cancellation actions**
+- [x] **Step 4: Implement completion/cancellation actions**
 
 Completion redirects to `/history/:id` after API success. Cancellation redirects to `/purchases`.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
@@ -1024,7 +1024,7 @@ git commit -m "feat: add shopping session kanban screen"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Test:
 
@@ -1033,15 +1033,15 @@ Test:
 - History detail groups bought, not found, and unprocessed items.
 - Continuation list action calls API.
 
-- [ ] **Step 2: Implement history list**
+- [x] **Step 2: Implement history list**
 
 `/history` must render advanced filters and completed session rows.
 
-- [ ] **Step 3: Implement history detail**
+- [x] **Step 3: Implement history detail**
 
 `/history/[id]` must render immutable session metadata, item groups, known total, missing price warning, and continuation list action.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
