@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
+import type { ShoppingSessionDetailDto, ShoppingSessionItemDto } from "@zbuy/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AccountPage from "./account/page";
@@ -8,14 +9,16 @@ import ListsPage from "./lists/page";
 import LoginPage from "./page";
 import ProductsPage from "./products/page";
 import PurchasesPage from "./purchases/page";
+import PurchaseSessionPage from "./purchases/[id]/page";
 import ResetPasswordPage from "./reset-password/page";
 import SignUpPage from "./signup/page";
 import * as resources from "../lib/resources";
 
 const routerPush = vi.hoisted(() => vi.fn());
+const routeParams = vi.hoisted(() => ({ current: { id: "list-1" } }));
 
 vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "list-1" }),
+  useParams: () => routeParams.current,
   useRouter: () => ({ push: routerPush })
 }));
 
@@ -71,6 +74,7 @@ describe("purchase dashboard", () => {
     cleanup();
     vi.restoreAllMocks();
     routerPush.mockClear();
+    routeParams.current = { id: "list-1" };
   });
 
   const location = {
@@ -273,10 +277,179 @@ describe("purchase dashboard", () => {
   });
 });
 
+describe("purchase session detail", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    routerPush.mockClear();
+    routeParams.current = { id: "list-1" };
+  });
+
+  const location = {
+    id: "loc-1",
+    type: "physical" as const,
+    name: "Mercado Central",
+    address: null,
+    city: null,
+    websiteOrApp: null,
+    notes: null,
+    archivedAt: null,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const pendingItem: ShoppingSessionItemDto = {
+    id: "item-pending",
+    sourceProductId: "product-1",
+    sourceListItemId: "list-item-1",
+    snapshotProductName: "Arroz",
+    snapshotCategoryLabel: "Mercearia",
+    snapshotBrand: null,
+    quantity: "2",
+    unitId: "unit-kg",
+    snapshotUnitName: "Kilogram",
+    snapshotUnitAbbreviation: "kg",
+    expectedPrice: "10.00",
+    actualPrice: null,
+    status: "pending" as const,
+    priority: "normal" as const,
+    notes: "Comprar tipo 1",
+    sortOrder: 0
+  };
+
+  const boughtItem: ShoppingSessionItemDto = {
+    ...pendingItem,
+    id: "item-bought",
+    snapshotProductName: "Feijão",
+    actualPrice: "8.50",
+    status: "bought" as const,
+    notes: null
+  };
+
+  const notFoundItem: ShoppingSessionItemDto = {
+    ...pendingItem,
+    id: "item-not-found",
+    snapshotProductName: "Azeite",
+    actualPrice: null,
+    status: "not_found" as const,
+    notes: null
+  };
+
+  function makeSession(items: ShoppingSessionItemDto[] = [pendingItem, boughtItem, notFoundItem]): ShoppingSessionDetailDto {
+    return {
+      id: "session-1",
+      sourceListId: "list-1",
+      sourceListName: "Compra semanal",
+      purchaseLocation: location,
+      context: "physical" as const,
+      status: "active" as const,
+      startedAt: "2026-05-24T10:00:00.000Z",
+      completedAt: null,
+      canceledAt: null,
+      knownTotal: "8.50",
+      boughtItemsWithoutPriceCount: 0,
+      itemCounts: {
+        pending: items.filter((item) => item.status === "pending").length,
+        bought: items.filter((item) => item.status === "bought").length,
+        notFound: items.filter((item) => item.status === "not_found").length,
+        unprocessed: items.filter((item) => item.status === "unprocessed").length
+      },
+      items
+    };
+  }
+
+  function mockSession(session = makeSession()) {
+    routeParams.current = { id: "session-1" };
+    vi.spyOn(resources, "getShoppingSession").mockResolvedValue(session);
+    vi.spyOn(resources, "updateShoppingSessionItem").mockResolvedValue(session);
+    vi.spyOn(resources, "completeShoppingSession").mockResolvedValue({ ...session, status: "completed" as const });
+    vi.spyOn(resources, "cancelShoppingSession").mockResolvedValue({ ...session, status: "canceled" as const });
+    return session;
+  }
+
+  it("renders pending, bought, and not found columns", async () => {
+    mockSession();
+
+    render(<PurchaseSessionPage />);
+
+    expect(await screen.findByText("Pendente")).toBeInTheDocument();
+    expect(screen.getByText("Comprado")).toBeInTheDocument();
+    expect(screen.getByText("Não encontrado")).toBeInTheDocument();
+    expect(screen.getByText("Arroz")).toBeInTheDocument();
+    expect(screen.getByText("Feijão")).toBeInTheDocument();
+    expect(screen.getByText("Azeite")).toBeInTheDocument();
+  });
+
+  it("moves a pending item to bought with the fallback button", async () => {
+    const session = mockSession(makeSession([pendingItem]));
+    vi.mocked(resources.updateShoppingSessionItem).mockResolvedValue(makeSession([{ ...pendingItem, status: "bought" as const }]));
+
+    render(<PurchaseSessionPage />);
+
+    await screen.findByText("Arroz");
+    fireEvent.click(screen.getByRole("button", { name: "Marcar Arroz como comprado" }));
+
+    await waitFor(() =>
+      expect(resources.updateShoppingSessionItem).toHaveBeenCalledWith(session.id, pendingItem.id, { status: "bought" })
+    );
+  });
+
+  it("moves an item back to pending with the fallback button", async () => {
+    const session = mockSession(makeSession([boughtItem]));
+    vi.mocked(resources.updateShoppingSessionItem).mockResolvedValue(makeSession([{ ...boughtItem, status: "pending" as const }]));
+
+    render(<PurchaseSessionPage />);
+
+    await screen.findByText("Feijão");
+    fireEvent.click(screen.getByRole("button", { name: "Voltar Feijão para pendente" }));
+
+    await waitFor(() =>
+      expect(resources.updateShoppingSessionItem).toHaveBeenCalledWith(session.id, boughtItem.id, { status: "pending" })
+    );
+  });
+
+  it("updates actual price through the API", async () => {
+    const session = mockSession(makeSession([boughtItem]));
+
+    render(<PurchaseSessionPage />);
+
+    const priceInput = await screen.findByLabelText("Preço real de Feijão");
+    fireEvent.change(priceInput, { target: { value: "9.25" } });
+    fireEvent.blur(priceInput);
+
+    await waitFor(() =>
+      expect(resources.updateShoppingSessionItem).toHaveBeenCalledWith(session.id, boughtItem.id, { actualPrice: "9.25" })
+    );
+  });
+
+  it("completes the shopping session through the API", async () => {
+    const session = mockSession();
+
+    render(<PurchaseSessionPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Finalizar compra" }));
+
+    await waitFor(() => expect(resources.completeShoppingSession).toHaveBeenCalledWith(session.id));
+    expect(routerPush).toHaveBeenCalledWith(`/history/${session.id}`);
+  });
+
+  it("cancels the shopping session through the API", async () => {
+    const session = mockSession();
+
+    render(<PurchaseSessionPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Cancelar sessão" }));
+
+    await waitFor(() => expect(resources.cancelShoppingSession).toHaveBeenCalledWith(session.id));
+    expect(routerPush).toHaveBeenCalledWith("/purchases");
+  });
+});
+
 describe("product and list screens", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    routeParams.current = { id: "list-1" };
   });
 
   const unit = {
