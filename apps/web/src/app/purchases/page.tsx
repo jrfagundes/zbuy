@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import type {
   PurchaseLocationDto,
   ShoppingListSummaryDto,
@@ -77,6 +77,7 @@ export default function PurchasesPage() {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [canceling, setCanceling] = useState(false);
   const [locationStatus, setLocationStatus] = useState<"ready" | "loading" | "error">("ready");
+  const locationRequestId = useRef(0);
 
   async function loadDashboard(selectedContext = context) {
     const [active, sessions, shoppingLists, purchaseLocations] = await Promise.all([
@@ -97,13 +98,17 @@ export default function PurchasesPage() {
   }, []);
 
   async function changeContext(nextContext: ShoppingSessionContext) {
+    const requestId = locationRequestId.current + 1;
+    locationRequestId.current = requestId;
     setContext(nextContext);
     setLocationStatus("loading");
     try {
       const response = await listPurchaseLocations(nextContext);
+      if (locationRequestId.current !== requestId) return;
       setLocations(response.purchaseLocations);
       setLocationStatus("ready");
     } catch {
+      if (locationRequestId.current !== requestId) return;
       setLocations([]);
       setLocationStatus("error");
     }

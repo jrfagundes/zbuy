@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AccountPage from "./account/page";
 import ListDetailPage from "./lists/[id]/page";
 import ListsPage from "./lists/page";
@@ -86,6 +86,13 @@ describe("purchase dashboard", () => {
     updatedAt: "2026-05-24T00:00:00.000Z"
   };
 
+  const onlineLocation = {
+    ...location,
+    id: "loc-online",
+    type: "online" as const,
+    name: "Loja Online"
+  };
+
   const shoppingList = {
     id: "list-1",
     name: "Compra semanal",
@@ -147,6 +154,14 @@ describe("purchase dashboard", () => {
     vi.spyOn(resources, "startShoppingSession").mockResolvedValue({ ...activeSession, id: "session-new" });
   }
 
+  function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((done) => {
+      resolve = done;
+    });
+    return { promise, resolve };
+  }
+
   it("shows the active session with continue and cancel actions", async () => {
     mockPurchaseResources(activeSession);
 
@@ -195,6 +210,31 @@ describe("purchase dashboard", () => {
     expect(resources.listShoppingSessions).toHaveBeenCalledWith("completed", expect.any(Number));
     expect(resources.listShoppingSessions).toHaveBeenCalledWith("canceled", expect.any(Number));
     expect(resources.listShoppingSessions).not.toHaveBeenCalledWith(undefined, expect.any(Number));
+  });
+
+  it("keeps locations aligned with the latest selected purchase type", async () => {
+    const onlineLocations = deferred<{ purchaseLocations: typeof onlineLocation[] }>();
+    mockPurchaseResources();
+    vi.mocked(resources.listPurchaseLocations).mockImplementation(async (type) => {
+      if (type === "online") return onlineLocations.promise;
+      return { purchaseLocations: [location] };
+    });
+
+    render(<PurchasesPage />);
+
+    const typeSelect = await screen.findByLabelText("Tipo");
+    fireEvent.change(typeSelect, { target: { value: "online" } });
+    fireEvent.change(typeSelect, { target: { value: "physical" } });
+
+    await waitFor(() => expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument());
+
+    await act(async () => {
+      onlineLocations.resolve({ purchaseLocations: [onlineLocation] });
+      await onlineLocations.promise;
+    });
+
+    expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Loja Online" })).not.toBeInTheDocument();
   });
 
   it("creates a purchase location inline", async () => {
