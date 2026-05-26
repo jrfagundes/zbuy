@@ -409,7 +409,7 @@ Expected: PASS.
 - Modify: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/<timestamp>_supermarket_detection_layout/migration.sql`
 
-- [ ] **Step 1: Add phase 5 Prisma enums and relations**
+- [x] **Step 1: Add phase 5 Prisma enums and relations**
 
 Add these enums to `apps/api/prisma/schema.prisma`:
 
@@ -470,7 +470,7 @@ model Unit {
 }
 ```
 
-- [ ] **Step 2: Add phase 5 Prisma models**
+- [x] **Step 2: Add phase 5 Prisma models**
 
 Add these models to `apps/api/prisma/schema.prisma`:
 
@@ -666,7 +666,7 @@ model SupermarketLayoutConsentOverride {
 }
 ```
 
-- [ ] **Step 3: Create and apply the migration**
+- [x] **Step 3: Create and apply the migration**
 
 Run:
 
@@ -678,7 +678,7 @@ corepack pnpm --filter @zbuy/api prisma:generate
 
 Expected: Prisma creates a migration, applies it locally, and regenerates the client.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add apps/api/prisma/schema.prisma apps/api/prisma/migrations
