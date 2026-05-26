@@ -10,6 +10,7 @@ import { PurchaseLocationsModule } from "./purchase-locations/purchase-locations
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
 import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
 import { ShoppingSessionsModule } from "./shopping-sessions/shopping-sessions.module";
+import { SupermarketsModule } from "./supermarkets/supermarkets.module";
 import { UnitsModule } from "./units/units.module";
 
 @Module({
@@ -23,6 +24,7 @@ import { UnitsModule } from "./units/units.module";
     ProductsModule,
     PurchaseHistoryModule,
     PurchaseLocationsModule,
+    SupermarketsModule,
     ShoppingListsModule,
     ShoppingSessionsModule
   ]
