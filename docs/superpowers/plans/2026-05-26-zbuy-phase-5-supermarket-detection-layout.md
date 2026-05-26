@@ -1314,7 +1314,7 @@ git commit -m "feat: add physical journey start flow"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1326,13 +1326,13 @@ Tests must verify:
 - Switch supermarket prompt calls the switch API.
 - Complete journey calls the completion API.
 
-- [ ] **Step 2: Implement page**
+- [x] **Step 2: Implement page**
 
 `/journeys/[id]` loads the journey by id and renders `JourneyBoard`.
 
 If no active stop exists and the journey is active, render controls to detect/select/create the next supermarket.
 
-- [ ] **Step 3: Implement board grouping**
+- [x] **Step 3: Implement board grouping**
 
 `JourneyBoard` groups `journey.items` by:
 
@@ -1350,7 +1350,7 @@ For each item render:
 - Mark not found.
 - Move back to pending.
 
-- [ ] **Step 4: Implement stop controls**
+- [x] **Step 4: Implement stop controls**
 
 Add actions:
 
@@ -1359,7 +1359,7 @@ Add actions:
 - Switch supermarket.
 - Finish overall journey.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
