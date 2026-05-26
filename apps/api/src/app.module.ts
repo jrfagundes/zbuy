@@ -9,6 +9,7 @@ import { ProductsModule } from "./products/products.module";
 import { PurchaseHistoryModule } from "./purchase-history/purchase-history.module";
 import { PurchaseLocationsModule } from "./purchase-locations/purchase-locations.module";
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
+import { ShoppingJourneysModule } from "./shopping-journeys/shopping-journeys.module";
 import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
 import { ShoppingSessionsModule } from "./shopping-sessions/shopping-sessions.module";
 import { SupermarketLayoutsModule } from "./supermarket-layouts/supermarket-layouts.module";
@@ -29,6 +30,7 @@ import { UnitsModule } from "./units/units.module";
     LayoutConsentModule,
     SupermarketLayoutsModule,
     SupermarketsModule,
+    ShoppingJourneysModule,
     ShoppingListsModule,
     ShoppingSessionsModule
   ]
