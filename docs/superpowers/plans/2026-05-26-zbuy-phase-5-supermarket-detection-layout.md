@@ -71,7 +71,7 @@
 - Modify: `packages/shared/src/index.ts`
 - Modify: `packages/shared/src/index.test.ts`
 
-- [ ] **Step 1: Write the failing shared DTO test**
+- [x] **Step 1: Write the failing shared DTO test**
 
 Append this test to `packages/shared/src/index.test.ts`:
 
@@ -198,7 +198,7 @@ test("phase 5 DTO shapes support supermarkets, journeys, layouts, and consent", 
 });
 ```
 
-- [ ] **Step 2: Run the shared test and verify it fails**
+- [x] **Step 2: Run the shared test and verify it fails**
 
 Run:
 
@@ -208,7 +208,7 @@ corepack pnpm --filter @zbuy/shared test
 
 Expected: FAIL because the phase 5 DTOs are not exported.
 
-- [ ] **Step 3: Add phase 5 shared exports**
+- [x] **Step 3: Add phase 5 shared exports**
 
 Append these exports to `packages/shared/src/index.ts`:
 
@@ -389,7 +389,7 @@ export interface UpdateShoppingJourneyStopItemRequest {
 }
 ```
 
-- [ ] **Step 4: Run shared tests and commit**
+- [x] **Step 4: Run shared tests and commit**
 
 Run:
 
