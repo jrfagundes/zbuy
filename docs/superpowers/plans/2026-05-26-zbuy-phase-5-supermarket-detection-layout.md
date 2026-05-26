@@ -910,7 +910,7 @@ git commit -m "feat: add layout contribution consent API"
 - Create: `apps/api/src/supermarket-layouts/supermarket-layouts.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write layout tests**
+- [x] **Step 1: Write layout tests**
 
 Tests must prove:
 
@@ -923,7 +923,7 @@ Tests must prove:
 - Suggestions are listed separately from private placements.
 - Accepting a suggestion creates or reuses a private corridor and creates a private placement.
 
-- [ ] **Step 2: Add DTOs**
+- [x] **Step 2: Add DTOs**
 
 Create:
 
@@ -957,7 +957,7 @@ export class AcceptSharedLayoutSuggestionDto {
 }
 ```
 
-- [ ] **Step 3: Implement service**
+- [x] **Step 3: Implement service**
 
 Implement:
 
@@ -973,7 +973,7 @@ Implement:
 
 `acceptSuggestion` creates a corridor named `dto.corridorName` or `suggestion.suggestedCorridorName` when `dto.corridorId` is absent.
 
-- [ ] **Step 4: Add controller/module and verify**
+- [x] **Step 4: Add controller/module and verify**
 
 Run:
 
