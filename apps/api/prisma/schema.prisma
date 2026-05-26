@@ -452,6 +452,7 @@ model SupermarketCorridor {
   placements    PrivateProductPlacement[]
   stopItems     ShoppingJourneyStopItem[]
 
+  @@unique([id, ownerUserId, supermarketId])
   @@index([ownerUserId, supermarketId, sortOrder])
 }
 
@@ -467,7 +468,7 @@ model PrivateProductPlacement {
   owner           User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   supermarket     Supermarket         @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
   product         Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  corridor        SupermarketCorridor @relation(fields: [corridorId], references: [id], onDelete: Cascade)
+  corridor        SupermarketCorridor @relation(fields: [corridorId, ownerUserId, supermarketId], references: [id, ownerUserId, supermarketId], onDelete: Cascade)
 
   @@unique([ownerUserId, supermarketId, productId])
   @@index([supermarketId, corridorId])
@@ -486,6 +487,7 @@ model SharedLayoutSuggestion {
   supermarket             Supermarket @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
   product                 Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
+  @@unique([supermarketId, productId, suggestedCorridorName])
   @@index([supermarketId, productId])
 }
 

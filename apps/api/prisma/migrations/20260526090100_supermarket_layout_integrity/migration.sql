@@ -1,0 +1,5 @@
+-- RenameForeignKey
+ALTER TABLE "PrivateProductPlacement" RENAME CONSTRAINT "PrivateProductPlacement_corridorId_ownerUserId_supermarketId_fk" TO "PrivateProductPlacement_corridorId_ownerUserId_supermarket_fkey";
+
+-- RenameIndex
+ALTER INDEX "SharedLayoutSuggestion_supermarketId_productId_suggestedCorrido" RENAME TO "SharedLayoutSuggestion_supermarketId_productId_suggestedCor_key";
