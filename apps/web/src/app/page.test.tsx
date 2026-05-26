@@ -1,13 +1,16 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import type {
+  LayoutContributionConsentDto,
   PurchaseLocationDto,
   ShoppingListSummaryDto,
   ShoppingJourneyDetailDto,
   ShoppingJourneySummaryDto,
   ShoppingSessionDetailDto,
   ShoppingSessionItemDto,
-  ShoppingSessionSummaryDto
+  ShoppingSessionSummaryDto,
+  SupermarketDto,
+  SupermarketLayoutDto
 } from "@zbuy/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -18,6 +21,8 @@ import LoginPage from "./page";
 import ProductsPage from "./products/page";
 import PurchasesPage from "./purchases/page";
 import PurchaseSessionPage from "./purchases/[id]/page";
+import SupermarketLayoutPage from "./supermarkets/[id]/layout/page";
+import SupermarketsPage from "./supermarkets/page";
 import HistoryDetailPage from "./history/[id]/page";
 import HistoryPage from "./history/page";
 import JourneyPage from "./journeys/[id]/page";
@@ -77,6 +82,179 @@ describe("authentication screens", () => {
     render(<AccountPage />);
 
     expect(await screen.findByText("Conta indisponível")).toBeInTheDocument();
+  });
+});
+
+describe("supermarket layout screens", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    routeParams.current = { id: "supermarket-1" };
+  });
+
+  const supermarket: SupermarketDto = {
+    id: "supermarket-1",
+    name: "Mercado Central",
+    address: "Rua A, 100",
+    city: "São Paulo",
+    latitude: "-23.5",
+    longitude: "-46.6",
+    presenceRadiusMeters: 500,
+    archivedAt: null,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const layout: SupermarketLayoutDto = {
+    supermarketId: "supermarket-1",
+    presenceRadiusMeters: 500,
+    corridors: [
+      { id: "corridor-1", name: "Mercearia", sortOrder: 0, productCount: 2 },
+      { id: "corridor-2", name: "Hortifruti", sortOrder: 1, productCount: 1 }
+    ],
+    placements: [
+      { productId: "product-rice", corridorId: "corridor-1", lastConfirmedAt: "2026-05-24T10:00:00.000Z" },
+      { productId: "product-banana", corridorId: "corridor-2", lastConfirmedAt: "2026-05-24T10:00:00.000Z" }
+    ],
+    suggestions: [
+      {
+        id: "suggestion-1",
+        productId: "product-bread",
+        suggestedCorridorName: "Padaria",
+        confidenceScore: "0.82",
+        sourceContributionCount: 8
+      }
+    ]
+  };
+
+  const consent: LayoutContributionConsentDto = {
+    globalSharedLayoutContributionEnabled: true,
+    supermarketOverride: null,
+    effectiveSharedLayoutContributionEnabled: true
+  };
+
+  function mockSupermarketLayout(overrides: Partial<SupermarketLayoutDto> = {}) {
+    routeParams.current = { id: "supermarket-1" };
+    vi.spyOn(resources, "listSupermarkets").mockResolvedValue({ supermarkets: [supermarket] });
+    vi.spyOn(resources, "createSupermarket").mockResolvedValue({ ...supermarket, id: "supermarket-2", name: "Atacado Norte" });
+    vi.spyOn(resources, "getSupermarketLayout").mockResolvedValue({ ...layout, ...overrides });
+    vi.spyOn(resources, "updateSupermarket").mockResolvedValue({ ...supermarket, presenceRadiusMeters: 650 });
+    vi.spyOn(resources, "createSupermarketCorridor").mockResolvedValue({ id: "corridor-3", name: "Bebidas", sortOrder: 2, productCount: 0 });
+    vi.spyOn(resources, "updateSupermarketCorridor").mockResolvedValue({ id: "corridor-1", name: "Limpeza", sortOrder: 0, productCount: 2 });
+    vi.spyOn(resources, "reorderSupermarketCorridors").mockResolvedValue({
+      ...layout,
+      corridors: [
+        { id: "corridor-2", name: "Hortifruti", sortOrder: 0, productCount: 1 },
+        { id: "corridor-1", name: "Mercearia", sortOrder: 1, productCount: 2 }
+      ]
+    });
+    vi.spyOn(resources, "deleteSupermarketCorridor").mockResolvedValue(undefined);
+    vi.spyOn(resources, "acceptSharedLayoutSuggestion").mockResolvedValue({
+      productId: "product-bread",
+      corridorId: "corridor-3",
+      lastConfirmedAt: "2026-05-24T10:00:00.000Z"
+    });
+    vi.spyOn(resources, "getSupermarketLayoutConsent").mockResolvedValue(consent);
+    vi.spyOn(resources, "updateSupermarketLayoutConsent").mockResolvedValue({
+      ...consent,
+      supermarketOverride: false,
+      effectiveSharedLayoutContributionEnabled: false
+    });
+  }
+
+  it("renders active supermarkets and creates a new supermarket", async () => {
+    mockSupermarketLayout();
+
+    render(<SupermarketsPage />);
+
+    expect(await screen.findByText("Mercado Central")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Editar layout de Mercado Central" })).toHaveAttribute(
+      "href",
+      "/supermarkets/supermarket-1/layout"
+    );
+
+    fireEvent.change(screen.getByLabelText("Nome do supermercado"), { target: { value: "Atacado Norte" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar supermercado" }));
+
+    await waitFor(() => expect(resources.createSupermarket).toHaveBeenCalledWith({ name: "Atacado Norte" }));
+  });
+
+  it("edits corridors, radius, suggestions, and supermarket consent override", async () => {
+    mockSupermarketLayout();
+
+    render(<SupermarketLayoutPage />);
+
+    expect(await screen.findByText("Mercado Central")).toBeInTheDocument();
+    expect(screen.getByText("product-rice")).toBeInTheDocument();
+    expect(screen.getByText("Sem corredor definido")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Raio de presença em metros"), { target: { value: "650" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar raio" }));
+    await waitFor(() => expect(resources.updateSupermarket).toHaveBeenCalledWith("supermarket-1", { presenceRadiusMeters: 650 }));
+
+    fireEvent.change(screen.getByLabelText("Nome do novo corredor"), { target: { value: "Bebidas" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar corredor" }));
+    await waitFor(() => expect(resources.createSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", { name: "Bebidas" }));
+
+    fireEvent.change(screen.getByLabelText("Nome do corredor Mercearia"), { target: { value: "Limpeza" } });
+    fireEvent.click(screen.getByRole("button", { name: "Renomear Mercearia" }));
+    await waitFor(() =>
+      expect(resources.updateSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", "corridor-1", { name: "Limpeza" })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mover Hortifruti para cima" }));
+    await waitFor(() =>
+      expect(resources.reorderSupermarketCorridors).toHaveBeenCalledWith("supermarket-1", {
+        corridorIds: ["corridor-2", "corridor-1", "corridor-3"]
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir Mercearia" }));
+    await waitFor(() => expect(resources.deleteSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", "corridor-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Aceitar sugestão Padaria para product-bread" }));
+    await waitFor(() =>
+      expect(resources.acceptSharedLayoutSuggestion).toHaveBeenCalledWith("supermarket-1", "suggestion-1", {
+        corridorName: "Padaria"
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText("Compartilhamento deste supermercado"), { target: { value: "false" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar compartilhamento do supermercado" }));
+    await waitFor(() =>
+      expect(resources.updateSupermarketLayoutConsent).toHaveBeenCalledWith("supermarket-1", { supermarketOverride: false })
+    );
+  });
+
+  it("updates global layout contribution consent from account page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ user: { id: "user-1", name: "Junio", email: "junio@example.com" } }),
+        json: async () => ({ user: { id: "user-1", name: "Junio", email: "junio@example.com" } })
+      })
+    );
+    vi.spyOn(resources, "getLayoutContributionConsent").mockResolvedValue(consent);
+    vi.spyOn(resources, "updateLayoutContributionConsent").mockResolvedValue({
+      ...consent,
+      globalSharedLayoutContributionEnabled: false,
+      effectiveSharedLayoutContributionEnabled: false
+    });
+
+    render(<AccountPage />);
+
+    expect(await screen.findByText("Junio")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Contribuir com layouts compartilhados"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar preferências de layout" }));
+
+    await waitFor(() =>
+      expect(resources.updateLayoutContributionConsent).toHaveBeenCalledWith({
+        globalSharedLayoutContributionEnabled: false
+      })
+    );
   });
 });
 

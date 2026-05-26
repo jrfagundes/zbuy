@@ -1379,7 +1379,7 @@ git commit -m "feat: add active physical journey board"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1390,7 +1390,7 @@ Tests must verify:
 - Global consent setting updates from account page.
 - Supermarket consent override updates from layout page.
 
-- [ ] **Step 2: Implement supermarket list**
+- [x] **Step 2: Implement supermarket list**
 
 `/supermarkets` renders:
 
@@ -1399,7 +1399,7 @@ Tests must verify:
 - Create supermarket form.
 - Link to each layout screen.
 
-- [ ] **Step 3: Implement layout page**
+- [x] **Step 3: Implement layout page**
 
 `/supermarkets/[id]/layout` renders:
 
@@ -1410,7 +1410,7 @@ Tests must verify:
 - Suggestions with accept buttons.
 - Per-supermarket contribution consent override.
 
-- [ ] **Step 4: Add global consent to account page**
+- [x] **Step 4: Add global consent to account page**
 
 Add a section to `/account`:
 
@@ -1418,7 +1418,7 @@ Add a section to `/account`:
 - Text explaining private layouts remain private.
 - Save action calling `updateLayoutContributionConsent`.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
