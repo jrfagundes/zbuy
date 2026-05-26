@@ -1187,7 +1187,7 @@ git commit -m "feat: include shopping journeys in purchase history"
 - Modify: `apps/web/src/components/AppShell.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Add resource client functions**
+- [x] **Step 1: Add resource client functions**
 
 Add imports for phase 5 shared DTOs and implement:
 
@@ -1220,7 +1220,7 @@ Add imports for phase 5 shared DTOs and implement:
 - `completeShoppingJourney(id)`
 - `cancelShoppingJourney(id)`
 
-- [ ] **Step 2: Add navigation and styles**
+- [x] **Step 2: Add navigation and styles**
 
 Add `Supermercados` to `AppShell`.
 
@@ -1235,7 +1235,7 @@ Add CSS classes for:
 - `.suggestion-row`
 - `.consent-panel`
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web typecheck

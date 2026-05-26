@@ -591,6 +591,65 @@ textarea {
   font-weight: 800;
 }
 
+.journey-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.journey-stop-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(31, 122, 77, 0.22);
+  border-radius: 8px;
+  padding: 16px;
+  background: #edf6ea;
+}
+
+.supermarket-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.layout-editor {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(360px, 1.2fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.corridor-group,
+.undefined-corridor,
+.consent-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fbfcf9;
+}
+
+.undefined-corridor {
+  border-style: dashed;
+  background: #fffdf5;
+}
+
+.suggestion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.suggestion-row:last-child {
+  border-bottom: 0;
+}
+
 @media (max-width: 840px) {
   .auth-shell {
     grid-template-columns: 1fr;
@@ -639,7 +698,8 @@ textarea {
   .resource-grid,
   .resource-form,
   .purchase-summary,
-  .history-filters {
+  .history-filters,
+  .layout-editor {
     grid-template-columns: 1fr;
   }
 
