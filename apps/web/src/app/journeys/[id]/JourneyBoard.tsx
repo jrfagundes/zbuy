@@ -6,6 +6,7 @@ import type { ShoppingJourneyDetailDto, ShoppingJourneyItemDto, SupermarketDto }
 import {
   completeShoppingJourney,
   continueJourneyStopOutsideRadius,
+  createSupermarketCorridor,
   finishJourneyStop,
   listSupermarkets,
   switchJourneyStopSupermarket,
@@ -35,6 +36,8 @@ export function JourneyBoard({
   const [supermarkets, setSupermarkets] = useState<SupermarketDto[]>([]);
   const [nextSupermarketId, setNextSupermarketId] = useState("");
   const [lastStopId, setLastStopId] = useState(initialJourney.activeStop?.id ?? "");
+  const [showCorridorForm, setShowCorridorForm] = useState(false);
+  const [newCorridorName, setNewCorridorName] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -150,6 +153,34 @@ export function JourneyBoard({
     }
   }
 
+  async function createCorridorAction(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const supermarketId = journey.activeStop?.supermarketId;
+    const name = newCorridorName.trim();
+    if (!supermarketId || !name || saving) return;
+    setSaving(true);
+    setMessage(null);
+    try {
+      const corridor = await createSupermarketCorridor(supermarketId, { name });
+      updateLocal({
+        ...journey,
+        layout: {
+          supermarketId,
+          presenceRadiusMeters: journey.layout?.presenceRadiusMeters ?? 500,
+          placements: journey.layout?.placements ?? [],
+          suggestions: journey.layout?.suggestions ?? [],
+          corridors: [...(journey.layout?.corridors ?? []), corridor]
+        }
+      });
+      setNewCorridorName("");
+      setShowCorridorForm(false);
+    } catch {
+      setMessage("Não foi possível criar o corredor.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <section className="journey-shell">
       {journey.activeStop ? (
@@ -206,6 +237,30 @@ export function JourneyBoard({
       )}
 
       {message ? <p className="form-message error">{message}</p> : null}
+
+      {journey.activeStop ? (
+        <section className="resource-panel">
+          <div className="panel-heading">
+            <h2>Corredores</h2>
+            <button type="button" className="button secondary" onClick={() => setShowCorridorForm((current) => !current)}>
+              Novo corredor
+            </button>
+          </div>
+          {showCorridorForm ? (
+            <form className="resource-form compact-form" onSubmit={(event) => void createCorridorAction(event)}>
+              <label>
+                Nome do corredor
+                <input value={newCorridorName} onChange={(event) => setNewCorridorName(event.target.value)} />
+              </label>
+              <div className="form-actions">
+                <button type="submit" className="button primary" disabled={saving || !newCorridorName.trim()}>
+                  Salvar corredor
+                </button>
+              </div>
+            </form>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="layout-editor" aria-label="Itens da jornada">
         {groups.map((group) => (

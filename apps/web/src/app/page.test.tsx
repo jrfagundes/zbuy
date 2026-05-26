@@ -587,6 +587,32 @@ describe("purchase dashboard", () => {
     );
   });
 
+  it("creates and starts a physical journey manually without browser geolocation", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.change(screen.getByLabelText("Lista"), { target: { value: "list-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar supermercado manualmente" }));
+    fireEvent.change(await screen.findByLabelText("Nome do supermercado"), { target: { value: "Mercado Manual" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar e iniciar compra" }));
+
+    await waitFor(() =>
+      expect(resources.createSupermarket).toHaveBeenCalledWith({
+        name: "Mercado Manual",
+        presenceRadiusMeters: 500
+      })
+    );
+    await waitFor(() =>
+      expect(resources.startShoppingJourney).toHaveBeenCalledWith({
+        sourceListId: "list-1",
+        supermarketId: "supermarket-created"
+      })
+    );
+    expect(routerPush).toHaveBeenCalledWith("/journeys/journey-new");
+  });
+
   it("keeps the online context using the existing session start flow", async () => {
     mockPurchaseResources();
 
@@ -961,6 +987,7 @@ describe("active physical journey board", () => {
     vi.spyOn(resources, "finishJourneyStop").mockResolvedValue({ ...journey, activeStop: null });
     vi.spyOn(resources, "continueJourneyStopOutsideRadius").mockResolvedValue(journey);
     vi.spyOn(resources, "switchJourneyStopSupermarket").mockResolvedValue(journey);
+    vi.spyOn(resources, "createSupermarketCorridor").mockResolvedValue({ id: "corridor-3", name: "Bebidas", sortOrder: 2, productCount: 0 });
     vi.spyOn(resources, "completeShoppingJourney").mockResolvedValue({ ...journey, status: "completed", completedAt: "2026-05-24T12:00:00.000Z" });
     vi.spyOn(resources, "listSupermarkets").mockResolvedValue({
       supermarkets: [
@@ -1013,6 +1040,19 @@ describe("active physical journey board", () => {
         corridorId: "corridor-1"
       })
     );
+  });
+
+  it("creates a corridor from the active journey board", async () => {
+    mockJourney();
+
+    render(<JourneyPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Novo corredor" }));
+    fireEvent.change(screen.getByLabelText("Nome do corredor"), { target: { value: "Bebidas" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar corredor" }));
+
+    await waitFor(() => expect(resources.createSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", { name: "Bebidas" }));
+    expect(await screen.findByRole("heading", { name: "Bebidas" })).toBeInTheDocument();
   });
 
   it("marks not found and keeps the item visible for the next stop after finishing", async () => {

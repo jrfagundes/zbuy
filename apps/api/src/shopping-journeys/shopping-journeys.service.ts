@@ -127,7 +127,7 @@ export class ShoppingJourneysService {
 
   async switchSupermarket(ownerUserId: string, journeyId: string, stopId: string, dto: StartJourneyStopDto) {
     await this.findOwnedActiveJourney(ownerUserId, journeyId);
-    await this.findOwnedActiveStop(journeyId, stopId);
+    await this.findOwnedSwitchableStop(journeyId, stopId);
     await this.supermarkets.findOwnedActive(ownerUserId, dto.supermarketId);
 
     await this.prisma.shoppingJourneyStop.update({
@@ -265,6 +265,14 @@ export class ShoppingJourneysService {
   private async findOwnedActiveStop(journeyId: string, stopId: string) {
     const stop = await this.prisma.shoppingJourneyStop.findFirst({ where: { id: stopId, journeyId, status: "active" } });
     if (!stop) {
+      throw new NotFoundException("Shopping journey stop not found");
+    }
+    return stop;
+  }
+
+  private async findOwnedSwitchableStop(journeyId: string, stopId: string) {
+    const stop = await this.prisma.shoppingJourneyStop.findFirst({ where: { id: stopId, journeyId } });
+    if (!stop || stop.status === "canceled") {
       throw new NotFoundException("Shopping journey stop not found");
     }
     return stop;

@@ -1437,7 +1437,7 @@ git commit -m "feat: add supermarket layout screens"
 - Modify: `tests/e2e/auth.spec.ts`
 - Modify: `tests/e2e/README.md`
 
-- [ ] **Step 1: Add API E2E**
+- [x] **Step 1: Add API E2E**
 
 Create an API E2E that:
 
@@ -1453,7 +1453,7 @@ Create an API E2E that:
 10. Completes the journey.
 11. Reads journey history.
 
-- [ ] **Step 2: Extend Playwright E2E**
+- [x] **Step 2: Extend Playwright E2E**
 
 Extend `tests/e2e/auth.spec.ts` after the phase 4 list/product setup:
 
@@ -1473,7 +1473,7 @@ await page.getByRole("button", { name: "Marcar Arroz como comprado" }).click();
 await page.getByRole("button", { name: "Finalizar parada neste supermercado" }).click();
 ```
 
-- [ ] **Step 3: Document prerequisites**
+- [x] **Step 3: Document prerequisites**
 
 Update `tests/e2e/README.md` with:
 
@@ -1481,7 +1481,7 @@ Update `tests/e2e/README.md` with:
 - Phase 5 migrations must be applied.
 - API must run on `3001` and web on `3000`.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test:e2e

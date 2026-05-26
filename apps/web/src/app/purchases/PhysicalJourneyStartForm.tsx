@@ -18,6 +18,7 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
   const [candidates, setCandidates] = useState<SupermarketDto[]>([]);
   const [selectedSupermarketId, setSelectedSupermarketId] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [manualCreate, setManualCreate] = useState(false);
   const [newSupermarketName, setNewSupermarketName] = useState("");
   const [detecting, setDetecting] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -34,6 +35,7 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
       setCandidates(detection.candidates);
       setSelectedSupermarketId(detection.candidates.length === 1 ? detection.candidates[0].id : "");
       setShowCreate(detection.status === "unknown");
+      setManualCreate(false);
     } catch {
       setMessage("Não foi possível detectar o supermercado.");
     } finally {
@@ -43,17 +45,21 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
 
   async function createCurrentSupermarket() {
     const name = newSupermarketName.trim();
-    if (!name || !coordinates) return;
+    if (!name) return;
 
     setCreating(true);
     setMessage(null);
     try {
       const supermarket = await createSupermarket({
         name,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
+        ...(coordinates ? { latitude: coordinates.latitude, longitude: coordinates.longitude } : {}),
         presenceRadiusMeters: 500
       });
+      if (manualCreate && sourceListId) {
+        const journey = await startShoppingJourney({ sourceListId, supermarketId: supermarket.id });
+        onStarted(journey.id);
+        return;
+      }
       setCandidates([supermarket]);
       setSelectedSupermarketId(supermarket.id);
       setNewSupermarketName("");
@@ -63,6 +69,15 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
     } finally {
       setCreating(false);
     }
+  }
+
+  function showManualCreate() {
+    setCoordinates(null);
+    setCandidates([]);
+    setSelectedSupermarketId("");
+    setShowCreate(true);
+    setManualCreate(true);
+    setMessage(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -104,6 +119,9 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
         <button type="button" className="button secondary" onClick={() => void detectCurrentSupermarket()} disabled={detecting}>
           Detectar supermercado
         </button>
+        <button type="button" className="button secondary" onClick={showManualCreate}>
+          Criar supermercado manualmente
+        </button>
       </div>
 
       {candidates.length > 0 ? (
@@ -137,7 +155,7 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
               onClick={() => void createCurrentSupermarket()}
               disabled={creating || !newSupermarketName.trim()}
             >
-              Criar supermercado
+              {manualCreate ? "Criar e iniciar compra" : "Criar supermercado"}
             </button>
           </div>
         </>

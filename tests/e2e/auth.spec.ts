@@ -49,11 +49,30 @@ test("native account, products, and reusable lists", async ({ page }) => {
   await expect(page.getByText("Compra semanal - copia")).toBeVisible();
 
   await gotoReady(page, "/purchases");
-  await expect(page.getByLabel("Lista")).toBeVisible();
   await page.getByLabel("Lista").selectOption({ label: "Compra semanal" });
   await page.getByLabel("Tipo").selectOption("physical");
+  await page.getByRole("button", { name: "Criar supermercado manualmente" }).click();
+  await page.getByLabel("Nome do supermercado").fill("Mercado Central");
+  await page.getByRole("button", { name: "Criar e iniciar compra" }).click();
+  await expect(page).toHaveURL(/\/journeys\/[0-9a-f-]+/);
+  await expect(page.getByText("Sem corredor definido").first()).toBeVisible();
+  await page.getByRole("button", { name: "Novo corredor" }).click();
+  await page.getByLabel("Nome do corredor").fill("Corredor 1");
+  await page.getByRole("button", { name: "Salvar corredor" }).click();
+  await expect(page.getByRole("heading", { name: "Corredor 1" })).toBeVisible();
+  await page.getByLabel("Corredor de Arroz").selectOption({ label: "Corredor 1" });
+  await page.getByRole("button", { name: "Marcar Arroz como comprado" }).click();
+  await page.getByRole("button", { name: "Finalizar supermercado atual" }).click();
+  await expect(page.getByText("Escolher próximo supermercado")).toBeVisible();
+  await page.getByRole("button", { name: "Finalizar compra completa" }).click();
+  await expect(page).toHaveURL(/\/history/);
+
+  await gotoReady(page, "/purchases");
+  await expect(page.getByLabel("Lista")).toBeVisible();
+  await page.getByLabel("Tipo").selectOption("online");
+  await page.getByLabel("Lista").selectOption({ label: "Compra semanal" });
   await page.getByRole("button", { name: "Novo local" }).click();
-  await page.getByLabel("Nome do local").fill("Mercado Central");
+  await page.getByLabel("Nome do local").fill("Loja Online");
   await page.getByRole("button", { name: "Criar local" }).click();
   const locationSelect = page.locator("label").filter({ has: page.locator("select") }).filter({ hasText: "Local" }).locator("select");
   await expect(locationSelect).toHaveValue(/.+/);
