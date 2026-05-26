@@ -1126,7 +1126,7 @@ git commit -m "feat: add physical shopping journeys API"
 - Modify: `apps/api/src/purchase-history/purchase-history.service.spec.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Add history contract for journey stops**
+- [x] **Step 1: Add history contract for journey stops**
 
 Add a shared DTO:
 

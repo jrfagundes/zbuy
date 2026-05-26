@@ -305,6 +305,19 @@ export interface ShoppingJourneyStopDto {
   continuedOutsideRadiusAt: string | null;
 }
 
+export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
+  journeyId: string;
+  sourceListId: string;
+  sourceListName: string;
+  knownTotal: string;
+  boughtItemsWithoutPriceCount: number;
+  itemCounts: {
+    bought: number;
+    notFound: number;
+    unprocessed: number;
+  };
+}
+
 export interface ShoppingJourneyStopItemDto {
   id: string;
   stopId: string;
