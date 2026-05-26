@@ -698,7 +698,7 @@ git commit -m "feat: add supermarket layout database schema"
 - Create: `apps/api/src/supermarkets/supermarkets.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write service tests**
+- [x] **Step 1: Write service tests**
 
 Create `apps/api/src/supermarkets/supermarkets.service.spec.ts` using the existing Prisma mocking style from `apps/api/src/purchase-locations/purchase-locations.service.spec.ts`.
 
@@ -713,7 +713,7 @@ The tests must assert:
 - `detect(ownerUserId, { latitude, longitude })` returns `status: "unknown"` when no owned active supermarket matches.
 - `get(otherUserId, supermarketId)` throws `NotFoundException` for a supermarket owned by another user.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -723,7 +723,7 @@ corepack pnpm --filter @zbuy/api test -- supermarkets.service.spec.ts
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Add DTOs and response mapper**
+- [x] **Step 3: Add DTOs and response mapper**
 
 Create `apps/api/src/supermarkets/dto.ts`:
 
@@ -777,7 +777,7 @@ export class DetectSupermarketDto {
 
 Create `apps/api/src/supermarkets/supermarket-response.ts` with `toSupermarketDto(supermarket, distanceMeters?)`.
 
-- [ ] **Step 4: Implement service detection logic**
+- [x] **Step 4: Implement service detection logic**
 
 Implement `SupermarketsService` with:
 
@@ -812,11 +812,11 @@ Detection returns:
 - `ambiguous` when two or more active supermarkets are within their radius.
 - `unknown` when none match.
 
-- [ ] **Step 5: Add controller/module and register module**
+- [x] **Step 5: Add controller/module and register module**
 
 Expose the endpoints from the spec under `/supermarkets` and register `SupermarketsModule` in `AppModule`.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test -- supermarkets.service.spec.ts
