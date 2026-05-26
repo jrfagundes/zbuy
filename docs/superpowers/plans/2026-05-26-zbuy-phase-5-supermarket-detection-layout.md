@@ -1145,7 +1145,7 @@ export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
 }
 ```
 
-- [ ] **Step 2: Add history tests**
+- [x] **Step 2: Add history tests**
 
 Add tests proving:
 
@@ -1155,7 +1155,7 @@ Add tests proving:
 - Price filters include bought journey stop items only.
 - Ownership isolation is enforced.
 
-- [ ] **Step 3: Implement history queries**
+- [x] **Step 3: Implement history queries**
 
 Extend `PurchaseHistoryService` with:
 
@@ -1169,7 +1169,7 @@ Keep existing phase 4 session history endpoints stable and add:
 - `GET /purchase-history/journeys/:id`
 - `GET /purchase-history/journey-items`
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test -- purchase-history.service.spec.ts
