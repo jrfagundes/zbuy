@@ -1252,7 +1252,7 @@ git commit -m "feat: add phase 5 web resources"
 - Create: `apps/web/src/app/purchases/PhysicalJourneyStartForm.tsx`
 - Modify: `apps/web/src/app/page.test.tsx`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1263,7 +1263,7 @@ Tests must verify:
 - Unknown detection shows create-supermarket fields.
 - Online context still uses the existing phase 4 session start flow.
 
-- [ ] **Step 2: Implement form**
+- [x] **Step 2: Implement form**
 
 `PhysicalJourneyStartForm` props:
 
@@ -1285,7 +1285,7 @@ Render:
 - Manual supermarket create form when unknown or user chooses create.
 - Start journey button.
 
-- [ ] **Step 3: Wire Purchases page**
+- [x] **Step 3: Wire Purchases page**
 
 The page should:
 
@@ -1295,7 +1295,7 @@ The page should:
 - Let physical starts call `startShoppingJourney`.
 - Let online starts keep calling `startShoppingSession`.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import type {
   PurchaseLocationDto,
+  ShoppingJourneyDetailDto,
   ShoppingListSummaryDto,
   ShoppingSessionContext,
   ShoppingSessionSummaryDto,
@@ -14,12 +16,14 @@ import { AppShell } from "../../components/AppShell";
 import {
   cancelShoppingSession,
   createPurchaseLocation,
+  getActiveShoppingJourney,
   getActiveShoppingSession,
   listPurchaseLocations,
   listShoppingLists,
   listShoppingSessions,
   startShoppingSession
 } from "../../lib/resources";
+import { PhysicalJourneyStartForm } from "./PhysicalJourneyStartForm";
 import { StartPurchaseForm } from "./StartPurchaseForm";
 
 const recentSessionsLimit = 5;
@@ -69,7 +73,9 @@ function SessionFacts({ session }: { session: ShoppingSessionSummaryDto }) {
 }
 
 export default function PurchasesPage() {
+  const router = useRouter();
   const [activeSession, setActiveSession] = useState<ShoppingSessionSummaryDto | null>(null);
+  const [activeJourney, setActiveJourney] = useState<ShoppingJourneyDetailDto | null>(null);
   const [recentSessions, setRecentSessions] = useState<ShoppingSessionSummaryDto[]>([]);
   const [lists, setLists] = useState<ShoppingListSummaryDto[]>([]);
   const [locations, setLocations] = useState<PurchaseLocationDto[]>([]);
@@ -80,13 +86,15 @@ export default function PurchasesPage() {
   const locationRequestId = useRef(0);
 
   async function loadDashboard(selectedContext = context) {
-    const [active, sessions, shoppingLists, purchaseLocations] = await Promise.all([
+    const [active, journey, sessions, shoppingLists, purchaseLocations] = await Promise.all([
       getActiveShoppingSession(),
+      getActiveShoppingJourney(),
       loadRecentSessions(),
       listShoppingLists(),
       listPurchaseLocations(selectedContext)
     ]);
     setActiveSession(active);
+    setActiveJourney(journey);
     setRecentSessions(sessions);
     setLists(shoppingLists.shoppingLists);
     setLocations(purchaseLocations.purchaseLocations);
@@ -143,7 +151,37 @@ export default function PurchasesPage() {
 
         {status === "ready" ? (
           <>
-            {activeSession ? (
+            {activeJourney ? (
+              <section className="resource-panel">
+                <div className="panel-heading">
+                  <h2>Compra física ativa</h2>
+                  <span className="status-pill">{activeJourney.status}</span>
+                </div>
+                <div className="purchase-summary">
+                  <div>
+                    <span className="muted">Supermercado</span>
+                    <strong>{activeJourney.activeStop?.supermarketName ?? "Sem parada ativa"}</strong>
+                  </div>
+                  <div>
+                    <span className="muted">Lista</span>
+                    <strong>{activeJourney.sourceListName}</strong>
+                  </div>
+                  <div>
+                    <span className="muted">Status</span>
+                    <strong>{activeJourney.status}</strong>
+                  </div>
+                  <div>
+                    <span className="muted">Itens</span>
+                    <strong>{activeJourney.items.length}</strong>
+                  </div>
+                </div>
+                <div className="form-actions">
+                  <Link className="button primary" href={`/journeys/${activeJourney.id}`}>
+                    Continuar jornada
+                  </Link>
+                </div>
+              </section>
+            ) : activeSession ? (
               <section className="resource-panel">
                 <div className="panel-heading">
                   <h2>Sessão ativa</h2>
@@ -170,14 +208,30 @@ export default function PurchasesPage() {
                   <h2>Iniciar compra</h2>
                   {locationStatus === "loading" ? <p className="muted">Carregando locais.</p> : null}
                   {locationStatus === "error" ? <p className="form-message error">Não foi possível carregar os locais.</p> : null}
-                  <StartPurchaseForm
-                    context={context}
-                    lists={lists}
-                    locations={locations}
-                    onContextChange={changeContext}
-                    onCreateLocation={createLocation}
-                    onStartSession={startSession}
-                  />
+                  {context === "physical" ? (
+                    <div className="detail-stack">
+                      <label className="search-field">
+                        Tipo
+                        <select value={context} onChange={(event) => void changeContext(event.target.value as ShoppingSessionContext)}>
+                          <option value="physical">Física</option>
+                          <option value="online">Online</option>
+                        </select>
+                      </label>
+                      <PhysicalJourneyStartForm
+                        lists={lists}
+                        onStarted={(journeyId) => router.push(`/journeys/${journeyId}`)}
+                      />
+                    </div>
+                  ) : (
+                    <StartPurchaseForm
+                      context={context}
+                      lists={lists}
+                      locations={locations}
+                      onContextChange={changeContext}
+                      onCreateLocation={createLocation}
+                      onStartSession={startSession}
+                    />
+                  )}
                 </div>
                 <div className="resource-panel">
                   <h2>Listas reutilizáveis</h2>
