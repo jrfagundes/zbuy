@@ -838,7 +838,7 @@ git commit -m "feat: add supermarkets API"
 - Create: `apps/api/src/layout-consent/layout-consent.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write consent tests**
+- [x] **Step 1: Write consent tests**
 
 Create tests proving:
 
@@ -849,7 +849,7 @@ Create tests proving:
 - Clearing a supermarket override falls back to global consent.
 - Users cannot read or update consent for another user's supermarket.
 
-- [ ] **Step 2: Add DTO and mapper**
+- [x] **Step 2: Add DTO and mapper**
 
 Create `dto.ts`:
 
@@ -868,7 +868,7 @@ export class UpdateLayoutContributionConsentDto {
 
 Create mapper returning `LayoutContributionConsentDto`.
 
-- [ ] **Step 3: Implement service**
+- [x] **Step 3: Implement service**
 
 Implement:
 
@@ -879,7 +879,7 @@ Implement:
 
 `updateForSupermarket(..., null)` deletes the override row.
 
-- [ ] **Step 4: Add controller/module and verify**
+- [x] **Step 4: Add controller/module and verify**
 
 Expose:
 
