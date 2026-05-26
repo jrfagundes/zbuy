@@ -11,6 +11,7 @@ import { PurchaseLocationsModule } from "./purchase-locations/purchase-locations
 import { RequestContextMiddleware } from "./request-context/request-context.middleware";
 import { ShoppingListsModule } from "./shopping-lists/shopping-lists.module";
 import { ShoppingSessionsModule } from "./shopping-sessions/shopping-sessions.module";
+import { SupermarketLayoutsModule } from "./supermarket-layouts/supermarket-layouts.module";
 import { SupermarketsModule } from "./supermarkets/supermarkets.module";
 import { UnitsModule } from "./units/units.module";
 
@@ -26,6 +27,7 @@ import { UnitsModule } from "./units/units.module";
     PurchaseHistoryModule,
     PurchaseLocationsModule,
     LayoutConsentModule,
+    SupermarketLayoutsModule,
     SupermarketsModule,
     ShoppingListsModule,
     ShoppingSessionsModule
