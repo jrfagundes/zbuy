@@ -997,7 +997,7 @@ git commit -m "feat: add supermarket layout API"
 - Create: `apps/api/src/shopping-journeys/shopping-journeys.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write journey service tests**
+- [x] **Step 1: Write journey service tests**
 
 Tests must cover:
 
@@ -1014,7 +1014,7 @@ Tests must cover:
 - Completing a journey converts remaining active items to `unprocessed`.
 - Canceling a journey cancels the active stop and keeps audit rows.
 
-- [ ] **Step 2: Add DTOs**
+- [x] **Step 2: Add DTOs**
 
 Create DTOs:
 
@@ -1060,7 +1060,7 @@ export class UpdateShoppingJourneyStopItemDto {
 }
 ```
 
-- [ ] **Step 3: Implement journey start and active retrieval**
+- [x] **Step 3: Implement journey start and active retrieval**
 
 `start(ownerUserId, dto)` must:
 
@@ -1073,7 +1073,7 @@ export class UpdateShoppingJourneyStopItemDto {
 7. Create the first active `ShoppingJourneyStop`.
 8. Create pending `ShoppingJourneyStopItem` rows for every active journey item.
 
-- [ ] **Step 4: Implement stop and item transitions**
+- [x] **Step 4: Implement stop and item transitions**
 
 Implement:
 
@@ -1091,7 +1091,7 @@ Rules:
 - Setting a corridor for a product updates `PrivateProductPlacement` automatically.
 - Actual price is accepted only when the final stop item status is `bought`.
 
-- [ ] **Step 5: Implement completion and cancellation**
+- [x] **Step 5: Implement completion and cancellation**
 
 `complete(ownerUserId, journeyId)` must:
 
@@ -1105,7 +1105,7 @@ Rules:
 - Cancel any active stop.
 - Set `status = canceled`.
 
-- [ ] **Step 6: Add controller/module and verify**
+- [x] **Step 6: Add controller/module and verify**
 
 Expose the routes from the spec. Run:
 
