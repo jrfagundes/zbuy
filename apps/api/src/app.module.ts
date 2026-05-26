@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
 import { AuthModule } from "./auth/auth.module";
 import { HealthModule } from "./health/health.module";
+import { LayoutConsentModule } from "./layout-consent/layout-consent.module";
 import { MeModule } from "./me/me.module";
 import { ObservabilityModule } from "./observability/observability.module";
 import { PrismaModule } from "./prisma/prisma.module";
@@ -24,6 +25,7 @@ import { UnitsModule } from "./units/units.module";
     ProductsModule,
     PurchaseHistoryModule,
     PurchaseLocationsModule,
+    LayoutConsentModule,
     SupermarketsModule,
     ShoppingListsModule,
     ShoppingSessionsModule
