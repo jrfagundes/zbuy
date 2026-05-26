@@ -1,13 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import type {
+  AcceptSharedLayoutSuggestionRequest,
+  DetectSupermarketRequest,
+  DetectSupermarketResponse,
+  LayoutContributionConsentDto,
   ProductDto,
   PurchaseLocationDto,
+  ShoppingJourneyDetailDto,
   ShoppingListDetailDto,
   ShoppingSessionDetailDto,
+  StartShoppingJourneyRequest,
   StartShoppingSessionRequest,
+  SupermarketLayoutDto,
   UnitDto,
   UpdateShoppingSessionItemRequest,
+  UpsertSupermarketRequest,
   UpsertShoppingListItemRequest
 } from "./index.js";
 
@@ -146,4 +154,114 @@ test("phase 4 DTO shapes support purchase locations and shopping sessions", () =
 
   assert.equal(detail.purchaseLocation.name, "Mercado Central");
   assert.equal(detail.items[0]?.status, "bought");
+});
+
+test("phase 5 DTO shapes support supermarkets, journeys, layouts, and consent", () => {
+  const supermarketInput: UpsertSupermarketRequest = {
+    name: "Mercado Central",
+    address: "Rua Principal, 100",
+    city: "Sao Paulo",
+    latitude: "-23.55052",
+    longitude: "-46.63331",
+    presenceRadiusMeters: 500
+  };
+
+  const detectionRequest: DetectSupermarketRequest = {
+    latitude: "-23.55052",
+    longitude: "-46.63331"
+  };
+
+  const detectionResponse: DetectSupermarketResponse = {
+    status: "detected",
+    candidates: [
+      {
+        id: "market-1",
+        name: supermarketInput.name,
+        address: supermarketInput.address ?? null,
+        city: supermarketInput.city ?? null,
+        latitude: supermarketInput.latitude ?? null,
+        longitude: supermarketInput.longitude ?? null,
+        presenceRadiusMeters: 500,
+        distanceMeters: 12,
+        archivedAt: null,
+        createdAt: "2026-05-26T00:00:00.000Z",
+        updatedAt: "2026-05-26T00:00:00.000Z"
+      }
+    ]
+  };
+
+  const start: StartShoppingJourneyRequest = {
+    sourceListId: "list-1",
+    supermarketId: "market-1",
+    latitude: detectionRequest.latitude,
+    longitude: detectionRequest.longitude
+  };
+
+  const layout: SupermarketLayoutDto = {
+    supermarketId: "market-1",
+    presenceRadiusMeters: 500,
+    corridors: [{ id: "corridor-1", name: "Corredor 1", sortOrder: 0, productCount: 1 }],
+    placements: [{ productId: "product-1", corridorId: "corridor-1", lastConfirmedAt: "2026-05-26T00:00:00.000Z" }],
+    suggestions: [{ id: "suggestion-1", productId: "product-2", suggestedCorridorName: "Corredor 2", confidenceScore: "0.80", sourceContributionCount: 3 }]
+  };
+
+  const consent: LayoutContributionConsentDto = {
+    globalSharedLayoutContributionEnabled: false,
+    supermarketOverride: null,
+    effectiveSharedLayoutContributionEnabled: false
+  };
+
+  const accept: AcceptSharedLayoutSuggestionRequest = {
+    corridorId: "corridor-1"
+  };
+
+  const journey: ShoppingJourneyDetailDto = {
+    id: "journey-1",
+    sourceListId: start.sourceListId,
+    sourceListName: "Compra semanal",
+    context: "physical",
+    status: "active",
+    startedAt: "2026-05-26T00:00:00.000Z",
+    completedAt: null,
+    canceledAt: null,
+    knownTotal: "0",
+    boughtItemsWithoutPriceCount: 0,
+    activeStop: {
+      id: "stop-1",
+      supermarketId: "market-1",
+      supermarketName: "Mercado Central",
+      status: "active",
+      startedAt: "2026-05-26T00:00:00.000Z",
+      finishedAt: null,
+      exitDetectedAt: null,
+      continuedOutsideRadiusAt: null
+    },
+    items: [
+      {
+        id: "journey-item-1",
+        sourceProductId: "product-1",
+        snapshotProductName: "Arroz",
+        snapshotCategoryLabel: "Mercearia",
+        snapshotBrand: null,
+        quantity: "1",
+        unitId: "unit-1",
+        snapshotUnitName: "Unidade",
+        snapshotUnitAbbreviation: "un",
+        expectedPrice: null,
+        finalActualPrice: null,
+        finalStatus: "active",
+        priority: "normal",
+        notes: null,
+        sortOrder: 0,
+        activeStopItem: null,
+        placement: { corridorId: "corridor-1", corridorName: "Corredor 1" }
+      }
+    ],
+    layout
+  };
+
+  assert.equal(detectionResponse.status, "detected");
+  assert.equal(journey.items[0]?.placement?.corridorName, "Corredor 1");
+  assert.equal(consent.effectiveSharedLayoutContributionEnabled, false);
+  assert.equal(accept.corridorId, "corridor-1");
 });
