@@ -39,42 +39,56 @@ export class ShoppingJourneysService {
       throw new ConflictException("User already has an active shopping journey");
     }
 
-    const sourceList = await this.prisma.shoppingList.findFirst({
-      where: { id: dto.sourceListId, ownerUserId, status: "active" },
-      include: sourceListInclude
-    });
-    if (!sourceList) {
-      throw new NotFoundException("Shopping list not found");
+    const sourceLists = await Promise.all(
+      dto.sourceListIds.map((id) =>
+        this.prisma.shoppingList.findFirst({
+          where: { id, ownerUserId, status: "active" },
+          include: sourceListInclude
+        })
+      )
+    );
+    const missingList = sourceLists.findIndex((l) => !l);
+    if (missingList !== -1) {
+      throw new NotFoundException(`Shopping list not found: ${dto.sourceListIds[missingList]}`);
     }
-    if (sourceList.items.length === 0) {
-      throw new BadRequestException("Shopping list must have at least one item");
+    const validLists = sourceLists as NonNullable<(typeof sourceLists)[number]>[];
+    const totalItems = validLists.reduce((sum, l) => sum + l.items.length, 0);
+    if (totalItems === 0) {
+      throw new BadRequestException("At least one shopping list must have items");
     }
 
     await this.supermarkets.findOwnedActive(ownerUserId, dto.supermarketId);
+
+    const primaryList = validLists[0];
+    let globalSortOrder = 0;
 
     const created = await this.prisma.$transaction(async (tx) => {
       const journey = await tx.shoppingJourney.create({
         data: {
           ownerUserId,
-          sourceListId: dto.sourceListId,
-          snapshotSourceListName: sourceList.name,
+          sourceListId: primaryList.id,
+          snapshotSourceListName: primaryList.name,
           context: "physical",
           items: {
-            create: sourceList.items.map((item) => ({
-              sourceProductId: item.productId,
-              sourceListItemId: item.id,
-              snapshotProductName: item.product.name,
-              snapshotCategoryLabel: item.product.categoryLabel,
-              snapshotBrand: item.product.brand,
-              quantity: item.quantity.toString(),
-              unitId: item.unitId,
-              snapshotUnitName: item.unit.name,
-              snapshotUnitAbbreviation: item.unit.abbreviation,
-              expectedPrice: item.expectedPrice?.toString() ?? null,
-              priority: item.priority,
-              notes: item.notes,
-              sortOrder: item.sortOrder
-            }))
+            create: validLists.flatMap((list) =>
+              list.items.map((item) => ({
+                sourceProductId: item.productId,
+                sourceListItemId: item.id,
+                sourceListId: list.id,
+                snapshotSourceListName: list.name,
+                snapshotProductName: item.product.name,
+                snapshotCategoryLabel: item.product.categoryLabel,
+                snapshotBrand: item.product.brand,
+                quantity: item.quantity.toString(),
+                unitId: item.unitId,
+                snapshotUnitName: item.unit.name,
+                snapshotUnitAbbreviation: item.unit.abbreviation,
+                expectedPrice: item.expectedPrice?.toString() ?? null,
+                priority: item.priority,
+                notes: item.notes,
+                sortOrder: globalSortOrder++
+              }))
+            )
           }
         },
         include: journeyInclude

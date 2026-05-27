@@ -279,6 +279,7 @@ export function JourneyBoard({
                     <p className="muted">
                       {item.snapshotCategoryLabel} · {itemAmount(item)}
                       {item.expectedPrice ? ` · Esperado: ${item.expectedPrice}` : ""}
+                      {item.sourceListName && journey.sourceLists.length > 1 ? ` · ${item.sourceListName}` : ""}
                     </p>
                   </div>
                   <label className="search-field">

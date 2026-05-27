@@ -374,6 +374,8 @@ model ShoppingJourneyItem {
   journeyId                String
   sourceProductId          String?
   sourceListItemId         String?
+  sourceListId             String?
+  snapshotSourceListName   String?
   snapshotProductName      String
   snapshotCategoryLabel    String
   snapshotBrand            String?

@@ -98,7 +98,7 @@ function journey(overrides: Record<string, unknown> = {}) {
   return {
     id: "journey-1",
     ownerUserId: "user-1",
-    sourceListId: "list-1",
+    sourceListIds: ["list-1"],
     snapshotSourceListName: "Compra semanal",
     context: "physical",
     status: "active",
@@ -238,7 +238,7 @@ describe("ShoppingJourneysService", () => {
     prismaMock.privateProductPlacement.findMany.mockResolvedValue([]);
 
     const result = await service.start("user-1", {
-      sourceListId: "list-1",
+      sourceListIds: ["list-1"],
       supermarketId: "supermarket-1",
       latitude: "-23.5",
       longitude: "-46.6"
@@ -273,7 +273,7 @@ describe("ShoppingJourneysService", () => {
     const { service, prismaMock } = makeService();
     prismaMock.shoppingJourney.findFirst.mockResolvedValue(journey());
 
-    await expect(service.start("user-1", { sourceListId: "list-1", supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
+    await expect(service.start("user-1", { sourceListIds: ["list-1"], supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
       ConflictException
     );
   });
@@ -283,7 +283,7 @@ describe("ShoppingJourneysService", () => {
     prismaMock.shoppingJourney.findFirst.mockResolvedValue(null);
     prismaMock.shoppingList.findFirst.mockResolvedValue(sourceList([]));
 
-    await expect(service.start("user-1", { sourceListId: "list-1", supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
+    await expect(service.start("user-1", { sourceListIds: ["list-1"], supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
       BadRequestException
     );
   });
@@ -294,7 +294,7 @@ describe("ShoppingJourneysService", () => {
     prismaMock.shoppingList.findFirst.mockResolvedValue(sourceList());
     supermarketsMock.findOwnedActive.mockRejectedValue(new NotFoundException("Supermarket not found"));
 
-    await expect(service.start("user-1", { sourceListId: "list-1", supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
+    await expect(service.start("user-1", { sourceListIds: ["list-1"], supermarketId: "supermarket-1" })).rejects.toBeInstanceOf(
       NotFoundException
     );
   });
@@ -354,20 +354,20 @@ describe("ShoppingJourneysService", () => {
     });
   });
 
-  it("keeps not-found stop items active for future supermarkets", async () => {
+  it("sets finalStatus to not_found when a stop item is marked not found", async () => {
     const { service, prismaMock } = makeService();
     prismaMock.shoppingJourney.findFirst.mockResolvedValue(journey());
     prismaMock.shoppingJourneyStop.findFirst.mockResolvedValue(stop());
     prismaMock.shoppingJourneyStopItem.findFirst.mockResolvedValue(stopItem());
     prismaMock.shoppingJourneyStopItem.update.mockResolvedValue(stopItem({ status: "not_found" }));
-    prismaMock.shoppingJourneyItem.update.mockResolvedValue(journeyItem({ finalStatus: "active" }));
+    prismaMock.shoppingJourneyItem.update.mockResolvedValue(journeyItem({ finalStatus: "not_found" }));
     prismaMock.privateProductPlacement.findMany.mockResolvedValue([]);
 
     await service.updateStopItem("user-1", "journey-1", "stop-1", "stop-item-1", { status: "not_found" });
 
     expect(prismaMock.shoppingJourneyItem.update).toHaveBeenCalledWith({
       where: { id: "journey-item-1" },
-      data: { finalStatus: "active", finalActualPrice: null }
+      data: { finalStatus: "not_found", finalActualPrice: null }
     });
   });
 

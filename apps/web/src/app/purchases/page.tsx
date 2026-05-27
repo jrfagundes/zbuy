@@ -163,8 +163,8 @@ export default function PurchasesPage() {
                     <strong>{activeJourney.activeStop?.supermarketName ?? "Sem parada ativa"}</strong>
                   </div>
                   <div>
-                    <span className="muted">Lista</span>
-                    <strong>{activeJourney.sourceListName}</strong>
+                    <span className="muted">{activeJourney.sourceLists.length > 1 ? "Listas" : "Lista"}</span>
+                    <strong>{activeJourney.sourceLists.map((l) => l.name).join(", ")}</strong>
                   </div>
                   <div>
                     <span className="muted">Status</span>

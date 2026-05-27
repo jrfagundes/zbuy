@@ -37,6 +37,8 @@ type JourneyStopWithRelations = {
 type JourneyItemWithStops = {
   id: string;
   sourceProductId: string | null;
+  sourceListId: string | null;
+  snapshotSourceListName: string | null;
   snapshotProductName: string;
   snapshotCategoryLabel: string;
   snapshotBrand: string | null;
@@ -76,10 +78,12 @@ export function toShoppingJourneyDetailDto(
 }
 
 export function toShoppingJourneySummaryDto(journey: ShoppingJourneyWithRelations): ShoppingJourneySummaryDto {
+  const sourceLists = deriveSourceLists(journey);
   return {
     id: journey.id,
     sourceListId: journey.sourceListId,
     sourceListName: journey.snapshotSourceListName,
+    sourceLists,
     context: journey.context,
     status: journey.status,
     startedAt: journey.startedAt.toISOString(),
@@ -89,6 +93,19 @@ export function toShoppingJourneySummaryDto(journey: ShoppingJourneyWithRelation
     boughtItemsWithoutPriceCount: journey.boughtItemsWithoutPriceCount,
     activeStop: findActiveStop(journey)
   };
+}
+
+function deriveSourceLists(journey: ShoppingJourneyWithRelations): { id: string; name: string }[] {
+  const seen = new Map<string, string>();
+  for (const item of journey.items ?? []) {
+    if (item.sourceListId && item.snapshotSourceListName && !seen.has(item.sourceListId)) {
+      seen.set(item.sourceListId, item.snapshotSourceListName);
+    }
+  }
+  if (seen.size === 0) {
+    return [{ id: journey.sourceListId, name: journey.snapshotSourceListName }];
+  }
+  return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
 }
 
 function toShoppingJourneyItemDto(
@@ -102,6 +119,8 @@ function toShoppingJourneyItemDto(
   return {
     id: item.id,
     sourceProductId: item.sourceProductId,
+    sourceListId: item.sourceListId,
+    sourceListName: item.snapshotSourceListName,
     snapshotProductName: item.snapshotProductName,
     snapshotCategoryLabel: item.snapshotCategoryLabel,
     snapshotBrand: item.snapshotBrand,

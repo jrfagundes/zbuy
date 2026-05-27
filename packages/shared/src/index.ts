@@ -331,6 +331,8 @@ export interface ShoppingJourneyStopItemDto {
 export interface ShoppingJourneyItemDto {
   id: string;
   sourceProductId: string | null;
+  sourceListId: string | null;
+  sourceListName: string | null;
   snapshotProductName: string;
   snapshotCategoryLabel: string;
   snapshotBrand: string | null;
@@ -352,6 +354,7 @@ export interface ShoppingJourneySummaryDto {
   id: string;
   sourceListId: string;
   sourceListName: string;
+  sourceLists: { id: string; name: string }[];
   context: ShoppingJourneyContext;
   status: ShoppingJourneyStatus;
   startedAt: string;
@@ -368,7 +371,7 @@ export interface ShoppingJourneyDetailDto extends ShoppingJourneySummaryDto {
 }
 
 export interface StartShoppingJourneyRequest {
-  sourceListId: string;
+  sourceListIds: string[];
   supermarketId: string;
   latitude?: string | null;
   longitude?: string | null;

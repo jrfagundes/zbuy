@@ -13,7 +13,7 @@ interface PhysicalJourneyStartFormProps {
 type Coordinates = { latitude: string; longitude: string };
 
 export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition = getBrowserPosition }: PhysicalJourneyStartFormProps) {
-  const [sourceListId, setSourceListId] = useState("");
+  const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [candidates, setCandidates] = useState<SupermarketDto[]>([]);
   const [selectedSupermarketId, setSelectedSupermarketId] = useState("");
@@ -24,6 +24,12 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
   const [creating, setCreating] = useState(false);
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  function toggleList(id: string) {
+    setSelectedListIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  }
 
   async function detectCurrentSupermarket() {
     setDetecting(true);
@@ -55,8 +61,8 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
         ...(coordinates ? { latitude: coordinates.latitude, longitude: coordinates.longitude } : {}),
         presenceRadiusMeters: 500
       });
-      if (manualCreate && sourceListId) {
-        const journey = await startShoppingJourney({ sourceListId, supermarketId: supermarket.id });
+      if (manualCreate && selectedListIds.length > 0) {
+        const journey = await startShoppingJourney({ sourceListIds: selectedListIds, supermarketId: supermarket.id });
         onStarted(journey.id);
         return;
       }
@@ -82,13 +88,13 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!sourceListId || !selectedSupermarketId) return;
+    if (selectedListIds.length === 0 || !selectedSupermarketId) return;
 
     setStarting(true);
     setMessage(null);
     try {
       const journey = await startShoppingJourney({
-        sourceListId,
+        sourceListIds: selectedListIds,
         supermarketId: selectedSupermarketId,
         latitude: coordinates?.latitude,
         longitude: coordinates?.longitude
@@ -103,17 +109,21 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
 
   return (
     <form className="resource-form compact-form" onSubmit={submit}>
-      <label className="span-2">
-        Lista
-        <select value={sourceListId} onChange={(event) => setSourceListId(event.target.value)} required>
-          <option value="">Selecione uma lista</option>
-          {lists.map((list) => (
-            <option key={list.id} value={list.id}>
-              {list.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="span-2 corridor-group">
+        <legend>Listas ({selectedListIds.length} selecionada{selectedListIds.length !== 1 ? "s" : ""})</legend>
+        {lists.map((list) => (
+          <label key={list.id}>
+            <input
+              type="checkbox"
+              checked={selectedListIds.includes(list.id)}
+              onChange={() => toggleList(list.id)}
+            />
+            {list.name}
+            <span className="muted"> · {list.itemCount} {list.itemCount === 1 ? "item" : "itens"}</span>
+          </label>
+        ))}
+        {lists.length === 0 ? <p className="muted">Nenhuma lista disponível.</p> : null}
+      </fieldset>
 
       <div className="span-2">
         <button type="button" className="button secondary" onClick={() => void detectCurrentSupermarket()} disabled={detecting}>
@@ -164,7 +174,7 @@ export function PhysicalJourneyStartForm({ lists, onStarted, getCurrentPosition 
       {message ? <p className="form-message error span-2">{message}</p> : null}
 
       <div className="form-actions span-2">
-        <button type="submit" className="button primary" disabled={starting || !sourceListId || !selectedSupermarketId}>
+        <button type="submit" className="button primary" disabled={starting || selectedListIds.length === 0 || !selectedSupermarketId}>
           Iniciar compra
         </button>
       </div>

@@ -1,8 +1,10 @@
-import { IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength } from "class-validator";
+import { ArrayMinSize, IsArray, IsIn, IsNumberString, IsOptional, IsString, IsUUID, Matches, MaxLength } from "class-validator";
 
 export class StartShoppingJourneyDto {
-  @IsUUID()
-  sourceListId!: string;
+  @IsArray()
+  @IsUUID("all", { each: true })
+  @ArrayMinSize(1)
+  sourceListIds!: string[];
 
   @IsUUID()
   supermarketId!: string;
