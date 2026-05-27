@@ -15,6 +15,7 @@ import type {
   ShoppingListDetailDto,
   ShoppingListSummaryDto,
   ShoppingJourneyDetailDto,
+  ShoppingJourneyHistoryStopDto,
   ShoppingJourneyStatus,
   ShoppingJourneySummaryDto,
   ShoppingSessionDetailDto,
@@ -238,6 +239,11 @@ export function getPurchaseHistorySession(id: string) {
 export function listPurchaseHistoryItems(filters: PurchaseHistoryQueryFilters = {}) {
   const params = buildQuery(filters);
   return apiRequest<{ purchaseHistoryItems: PurchaseHistoryItemDto[] }>(`/purchase-history/items${params}`);
+}
+
+export function listPurchaseHistoryJourneyStops(filters: PurchaseHistoryQueryFilters = {}) {
+  const params = buildQuery(filters);
+  return apiRequest<{ shoppingJourneyStops: ShoppingJourneyHistoryStopDto[] }>(`/purchase-history/journey-stops${params}`);
 }
 
 export function listSupermarkets(query?: string, latitude?: string, longitude?: string) {

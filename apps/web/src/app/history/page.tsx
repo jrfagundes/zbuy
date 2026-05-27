@@ -5,11 +5,12 @@ import React, { FormEvent, useEffect, useRef, useState } from "react";
 import type {
   PurchaseLocationDto,
   PurchaseLocationType,
+  ShoppingJourneyHistoryStopDto,
   ShoppingListSummaryDto,
   ShoppingSessionSummaryDto
 } from "@zbuy/shared";
 import { AppShell } from "../../components/AppShell";
-import { listPurchaseHistorySessions, listPurchaseLocations, listShoppingLists } from "../../lib/resources";
+import { listPurchaseHistoryJourneyStops, listPurchaseHistorySessions, listPurchaseLocations, listShoppingLists } from "../../lib/resources";
 
 type HistoryFilterForm = {
   dateFrom: string;
@@ -64,9 +65,13 @@ function normalizeDateTo(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) ? `${trimmed}T23:59:59.999Z` : trimmed;
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "Sem data";
+  return new Intl.DateTimeFormat("pt-BR").format(new Date(value));
+}
+
 function completedDate(session: ShoppingSessionSummaryDto) {
-  if (!session.completedAt) return "Sem data";
-  return new Intl.DateTimeFormat("pt-BR").format(new Date(session.completedAt));
+  return formatDate(session.completedAt);
 }
 
 function countTotal(session: ShoppingSessionSummaryDto) {
@@ -83,6 +88,7 @@ export default function HistoryPage() {
   const [locations, setLocations] = useState<PurchaseLocationDto[]>([]);
   const [lists, setLists] = useState<ShoppingListSummaryDto[]>([]);
   const [sessions, setSessions] = useState<ShoppingSessionSummaryDto[]>([]);
+  const [journeyStops, setJourneyStops] = useState<ShoppingJourneyHistoryStopDto[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const historyRequestId = useRef(0);
 
@@ -91,9 +97,13 @@ export default function HistoryPage() {
     historyRequestId.current = requestId;
     setStatus("loading");
     try {
-      const response = await listPurchaseHistorySessions(toHistoryFilters(nextFilters));
+      const [sessionResponse, journeyResponse] = await Promise.all([
+        listPurchaseHistorySessions(toHistoryFilters(nextFilters)),
+        listPurchaseHistoryJourneyStops(toHistoryFilters(nextFilters))
+      ]);
       if (historyRequestId.current !== requestId) return;
-      setSessions(response.shoppingSessions);
+      setSessions(sessionResponse.shoppingSessions);
+      setJourneyStops(journeyResponse.shoppingJourneyStops);
       setStatus("ready");
     } catch {
       if (historyRequestId.current !== requestId) return;
@@ -242,10 +252,44 @@ export default function HistoryPage() {
         </section>
 
         <section className="resource-panel">
-          <h2>Sessões concluídas</h2>
+          <h2>Jornadas físicas concluídas</h2>
           {status === "loading" ? <p className="muted">Carregando histórico.</p> : null}
           {status === "error" ? <p className="form-message error">Não foi possível carregar o histórico.</p> : null}
-          {status === "ready" && sessions.length === 0 ? <p className="muted">Nenhum histórico encontrado.</p> : null}
+          {status === "ready" && journeyStops.length === 0 ? <p className="muted">Nenhuma jornada encontrada.</p> : null}
+
+          <div className="resource-list">
+            {journeyStops.map((stop) => (
+              <article className="session-card" key={stop.id}>
+                <div className="metric-row">
+                  <div>
+                    <strong>{stop.sourceListName}</strong>
+                    <p className="muted">
+                      {formatDate(stop.finishedAt)} · {stop.supermarketName}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="purchase-summary">
+                  <span>Supermercado: {stop.supermarketName}</span>
+                  <span>Lista origem: {stop.sourceListName}</span>
+                  <span>Total conhecido: R$ {stop.knownTotal}</span>
+                  <span>Comprados: {stop.itemCounts.bought}</span>
+                  <span>Não encontrados: {stop.itemCounts.notFound}</span>
+                  <span>Não processados: {stop.itemCounts.unprocessed}</span>
+                </div>
+
+                {stop.boughtItemsWithoutPriceCount > 0 ? (
+                  <p className="form-message error">{stop.boughtItemsWithoutPriceCount} comprado(s) sem preço real.</p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="resource-panel">
+          <h2>Sessões concluídas</h2>
+          {status === "loading" ? null : null}
+          {status === "ready" && sessions.length === 0 ? <p className="muted">Nenhuma sessão encontrada.</p> : null}
 
           <div className="resource-list">
             {sessions.map((session) => (

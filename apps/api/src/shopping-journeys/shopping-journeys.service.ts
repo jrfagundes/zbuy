@@ -188,6 +188,8 @@ export class ShoppingJourneysService {
       data:
         nextStatus === "bought"
           ? { finalStatus: "bought", finalActualPrice: actualPrice }
+          : nextStatus === "not_found"
+          ? { finalStatus: "not_found", finalActualPrice: null }
           : { finalStatus: "active", finalActualPrice: null }
     });
 
