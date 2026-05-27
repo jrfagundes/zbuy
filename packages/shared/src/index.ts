@@ -309,6 +309,7 @@ export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
   journeyId: string;
   sourceListId: string;
   sourceListName: string;
+  sourceLists: { id: string; name: string }[];
   knownTotal: string;
   boughtItemsWithoutPriceCount: number;
   itemCounts: {

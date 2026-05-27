@@ -262,7 +262,7 @@ export default function HistoryPage() {
               <article className="session-card" key={stop.id}>
                 <div className="metric-row">
                   <div>
-                    <strong>{stop.sourceListName}</strong>
+                    <strong>{stop.sourceLists.map((l) => l.name).join(", ")}</strong>
                     <p className="muted">
                       {formatDate(stop.finishedAt)} · {stop.supermarketName}
                     </p>
@@ -271,7 +271,7 @@ export default function HistoryPage() {
 
                 <div className="purchase-summary">
                   <span>Supermercado: {stop.supermarketName}</span>
-                  <span>Lista origem: {stop.sourceListName}</span>
+                  <span>{stop.sourceLists.length > 1 ? "Listas" : "Lista"} origem: {stop.sourceLists.map((l) => l.name).join(", ")}</span>
                   <span>Total conhecido: R$ {stop.knownTotal}</span>
                   <span>Comprados: {stop.itemCounts.bought}</span>
                   <span>Não encontrados: {stop.itemCounts.notFound}</span>

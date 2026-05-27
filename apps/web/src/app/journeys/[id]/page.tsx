@@ -47,7 +47,7 @@ export default function JourneyPage() {
           <>
             <section className="resource-panel">
               <div className="panel-heading">
-                <h2>{journey.sourceListName}</h2>
+                <h2>{journey.sourceLists.map((l) => l.name).join(", ")}</h2>
                 <span className="status-pill">{journey.status}</span>
               </div>
               <div className="purchase-summary">
@@ -56,8 +56,8 @@ export default function JourneyPage() {
                   <strong>{journey.activeStop?.supermarketName ?? "Sem parada ativa"}</strong>
                 </div>
                 <div>
-                  <span className="muted">Lista</span>
-                  <strong>{journey.sourceListName}</strong>
+                  <span className="muted">{journey.sourceLists.length > 1 ? "Listas" : "Lista"}</span>
+                  <strong>{journey.sourceLists.map((l) => l.name).join(", ")}</strong>
                 </div>
                 <div>
                   <span className="muted">Total conhecido</span>

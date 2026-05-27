@@ -348,10 +348,26 @@ function toShoppingJourneyHistoryStopDto(stop: any): ShoppingJourneyHistoryStopD
     journeyId: stop.journeyId,
     sourceListId: stop.journey.sourceListId,
     sourceListName: stop.journey.snapshotSourceListName,
+    sourceLists: deriveSourceListsFromItems(stop.journey.items ?? [], stop.journey.sourceListId, stop.journey.snapshotSourceListName),
     knownTotal: stop.journey.knownTotal.toString(),
     boughtItemsWithoutPriceCount: stop.journey.boughtItemsWithoutPriceCount,
     itemCounts: countJourneyStopItems(stop.items ?? [])
   };
+}
+
+function deriveSourceListsFromItems(
+  items: Array<{ sourceListId?: string | null; snapshotSourceListName?: string | null }>,
+  fallbackId: string,
+  fallbackName: string
+): { id: string; name: string }[] {
+  const seen = new Map<string, string>();
+  for (const item of items) {
+    if (item.sourceListId && item.snapshotSourceListName && !seen.has(item.sourceListId)) {
+      seen.set(item.sourceListId, item.snapshotSourceListName);
+    }
+  }
+  if (seen.size === 0) return [{ id: fallbackId, name: fallbackName }];
+  return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
 }
 
 function countJourneyStopItems(items: Array<{ status: string }>) {
