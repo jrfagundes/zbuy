@@ -196,3 +196,193 @@ export interface PurchaseHistoryFilters {
 export interface CreateContinuationListRequest {
   name?: string;
 }
+
+// ─── Phase 5: Supermarkets, Journeys, Layouts, Consent ───────────────────────
+
+export type SupermarketDetectionStatus = "detected" | "ambiguous" | "unknown";
+export type ShoppingJourneyContext = "physical" | "online";
+export type ShoppingJourneyStatus = "active" | "completed" | "canceled";
+export type ShoppingJourneyStopStatus = "active" | "finished" | "canceled";
+export type ShoppingJourneyItemFinalStatus = "active" | "bought" | "not_found" | "unprocessed";
+
+export interface SupermarketDto {
+  id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  presenceRadiusMeters: number;
+  distanceMeters?: number;
+  archivedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertSupermarketRequest {
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  presenceRadiusMeters?: number;
+}
+
+export interface DetectSupermarketRequest {
+  latitude: string;
+  longitude: string;
+  radiusMeters?: number;
+}
+
+export interface DetectSupermarketResponse {
+  status: SupermarketDetectionStatus;
+  candidates: SupermarketDto[];
+}
+
+export interface SupermarketCorridorDto {
+  id: string;
+  name: string;
+  sortOrder: number;
+  productCount: number;
+}
+
+export interface PrivateProductPlacementDto {
+  productId: string;
+  corridorId: string;
+  lastConfirmedAt: string;
+}
+
+export interface SharedLayoutSuggestionDto {
+  id: string;
+  productId: string;
+  suggestedCorridorName: string;
+  confidenceScore: string;
+  sourceContributionCount: number;
+}
+
+export interface SupermarketLayoutDto {
+  supermarketId: string;
+  presenceRadiusMeters: number;
+  corridors: SupermarketCorridorDto[];
+  placements: PrivateProductPlacementDto[];
+  suggestions: SharedLayoutSuggestionDto[];
+}
+
+export interface UpsertCorridorRequest {
+  name: string;
+}
+
+export interface ReorderCorridorsRequest {
+  corridorIds: string[];
+}
+
+export interface UpsertPrivateProductPlacementRequest {
+  corridorId: string;
+}
+
+export interface AcceptSharedLayoutSuggestionRequest {
+  corridorId?: string;
+  corridorName?: string;
+}
+
+export interface LayoutContributionConsentDto {
+  globalSharedLayoutContributionEnabled: boolean;
+  supermarketOverride: boolean | null;
+  effectiveSharedLayoutContributionEnabled: boolean;
+}
+
+export interface UpdateLayoutContributionConsentRequest {
+  globalSharedLayoutContributionEnabled?: boolean;
+  supermarketOverride?: boolean | null;
+}
+
+export interface ShoppingJourneyStopDto {
+  id: string;
+  supermarketId: string;
+  supermarketName: string;
+  status: ShoppingJourneyStopStatus;
+  startedAt: string;
+  finishedAt: string | null;
+  exitDetectedAt: string | null;
+  continuedOutsideRadiusAt: string | null;
+}
+
+export interface ShoppingJourneyStopItemDto {
+  id: string;
+  stopId: string;
+  journeyItemId: string;
+  status: ShoppingSessionItemStatus;
+  actualPrice: string | null;
+  corridorId: string | null;
+  notes: string | null;
+}
+
+export interface ShoppingJourneyItemDto {
+  id: string;
+  sourceProductId: string | null;
+  snapshotProductName: string;
+  snapshotCategoryLabel: string;
+  snapshotBrand: string | null;
+  quantity: string;
+  unitId: string | null;
+  snapshotUnitName: string;
+  snapshotUnitAbbreviation: string;
+  expectedPrice: string | null;
+  finalActualPrice: string | null;
+  finalStatus: ShoppingJourneyItemFinalStatus;
+  priority: ListItemPriority;
+  notes: string | null;
+  sortOrder: number;
+  activeStopItem: ShoppingJourneyStopItemDto | null;
+  placement: { corridorId: string; corridorName: string } | null;
+}
+
+export interface ShoppingJourneySummaryDto {
+  id: string;
+  sourceListId: string;
+  sourceListName: string;
+  context: ShoppingJourneyContext;
+  status: ShoppingJourneyStatus;
+  startedAt: string;
+  completedAt: string | null;
+  canceledAt: string | null;
+  knownTotal: string;
+  boughtItemsWithoutPriceCount: number;
+  activeStop: ShoppingJourneyStopDto | null;
+}
+
+export interface ShoppingJourneyDetailDto extends ShoppingJourneySummaryDto {
+  items: ShoppingJourneyItemDto[];
+  layout: SupermarketLayoutDto | null;
+}
+
+export interface StartShoppingJourneyRequest {
+  sourceListId: string;
+  supermarketId: string;
+  latitude?: string | null;
+  longitude?: string | null;
+}
+
+export interface StartJourneyStopRequest {
+  supermarketId: string;
+}
+
+export interface UpdateShoppingJourneyStopItemRequest {
+  status?: "pending" | "bought" | "not_found";
+  actualPrice?: string | null;
+  corridorId?: string | null;
+  notes?: string | null;
+}
+
+export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
+  journeyId: string;
+  sourceListId: string;
+  sourceListName: string;
+  knownTotal: string;
+  boughtItemsWithoutPriceCount: number;
+  itemCounts: {
+    bought: number;
+    notFound: number;
+    unprocessed: number;
+  };
+}
