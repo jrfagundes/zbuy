@@ -305,8 +305,6 @@ export interface ShoppingJourneyStopDto {
   continuedOutsideRadiusAt: string | null;
 }
 
-<<<<<<< HEAD
-=======
 export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
   journeyId: string;
   sourceListId: string;
@@ -320,7 +318,6 @@ export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
   };
 }
 
->>>>>>> codex/zbuy-phase-5-supermarket-layout
 export interface ShoppingJourneyStopItemDto {
   id: string;
   stopId: string;
@@ -387,19 +384,3 @@ export interface UpdateShoppingJourneyStopItemRequest {
   corridorId?: string | null;
   notes?: string | null;
 }
-<<<<<<< HEAD
-
-export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
-  journeyId: string;
-  sourceListId: string;
-  sourceListName: string;
-  knownTotal: string;
-  boughtItemsWithoutPriceCount: number;
-  itemCounts: {
-    bought: number;
-    notFound: number;
-    unprocessed: number;
-  };
-}
-=======
->>>>>>> codex/zbuy-phase-5-supermarket-layout
