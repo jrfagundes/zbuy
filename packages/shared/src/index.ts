@@ -197,8 +197,6 @@ export interface CreateContinuationListRequest {
   name?: string;
 }
 
-// ─── Phase 5: Supermarkets, Journeys, Layouts, Consent ───────────────────────
-
 export type SupermarketDetectionStatus = "detected" | "ambiguous" | "unknown";
 export type ShoppingJourneyContext = "physical" | "online";
 export type ShoppingJourneyStatus = "active" | "completed" | "canceled";
@@ -307,6 +305,22 @@ export interface ShoppingJourneyStopDto {
   continuedOutsideRadiusAt: string | null;
 }
 
+<<<<<<< HEAD
+=======
+export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
+  journeyId: string;
+  sourceListId: string;
+  sourceListName: string;
+  knownTotal: string;
+  boughtItemsWithoutPriceCount: number;
+  itemCounts: {
+    bought: number;
+    notFound: number;
+    unprocessed: number;
+  };
+}
+
+>>>>>>> codex/zbuy-phase-5-supermarket-layout
 export interface ShoppingJourneyStopItemDto {
   id: string;
   stopId: string;
@@ -373,6 +387,7 @@ export interface UpdateShoppingJourneyStopItemRequest {
   corridorId?: string | null;
   notes?: string | null;
 }
+<<<<<<< HEAD
 
 export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
   journeyId: string;
@@ -386,3 +401,5 @@ export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
     unprocessed: number;
   };
 }
+=======
+>>>>>>> codex/zbuy-phase-5-supermarket-layout

@@ -2,20 +2,28 @@
 
 import React from "react";
 import { useEffect, useState } from "react";
-import type { CurrentUserDto } from "@zbuy/shared";
+import type { CurrentUserDto, LayoutContributionConsentDto } from "@zbuy/shared";
 import { apiRequest } from "../../lib/api";
+import { getLayoutContributionConsent, updateLayoutContributionConsent } from "../../lib/resources";
 
 export default function AccountPage() {
   const [user, setUser] = useState<CurrentUserDto | null>(null);
+  const [consent, setConsent] = useState<LayoutContributionConsentDto | null>(null);
+  const [globalContributionEnabled, setGlobalContributionEnabled] = useState(false);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("error");
+  const [savingConsent, setSavingConsent] = useState(false);
 
   useEffect(() => {
     let active = true;
     setStatus("loading");
     apiRequest<{ user: CurrentUserDto }>("/me")
-      .then((response) => {
+      .then(async (response) => {
         if (!active) return;
         setUser(response.user);
+        const consentResponse = await getLayoutContributionConsent().catch(() => null);
+        if (!active) return;
+        setConsent(consentResponse);
+        setGlobalContributionEnabled(consentResponse?.globalSharedLayoutContributionEnabled ?? false);
         setStatus("ready");
       })
       .catch(() => {
@@ -32,6 +40,19 @@ export default function AccountPage() {
     await apiRequest<void>("/auth/logout", { method: "POST" }).catch(() => undefined);
     setUser(null);
     setStatus("error");
+  }
+
+  async function saveLayoutConsent() {
+    setSavingConsent(true);
+    try {
+      const updated = await updateLayoutContributionConsent({
+        globalSharedLayoutContributionEnabled: globalContributionEnabled
+      });
+      setConsent(updated);
+      setGlobalContributionEnabled(updated.globalSharedLayoutContributionEnabled);
+    } finally {
+      setSavingConsent(false);
+    }
   }
 
   return (
@@ -55,6 +76,24 @@ export default function AccountPage() {
                 Listas
               </a>
             </div>
+            <section className="consent-panel">
+              <h2>Layouts compartilhados</h2>
+              <p>Layouts privados continuam privados; a contribuição usa apenas dados agregados de posicionamento.</p>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={globalContributionEnabled}
+                  onChange={(event) => setGlobalContributionEnabled(event.target.checked)}
+                />
+                Contribuir com layouts compartilhados
+              </label>
+              <button type="button" className="button primary" disabled={savingConsent} onClick={() => void saveLayoutConsent()}>
+                Salvar preferências de layout
+              </button>
+              {consent ? (
+                <p>{consent.effectiveSharedLayoutContributionEnabled ? "Compartilhamento ativo" : "Compartilhamento inativo"}</p>
+              ) : null}
+            </section>
             <button type="button" onClick={logout}>
               Sair
             </button>

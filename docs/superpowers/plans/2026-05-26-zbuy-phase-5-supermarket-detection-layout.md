@@ -71,7 +71,7 @@
 - Modify: `packages/shared/src/index.ts`
 - Modify: `packages/shared/src/index.test.ts`
 
-- [ ] **Step 1: Write the failing shared DTO test**
+- [x] **Step 1: Write the failing shared DTO test**
 
 Append this test to `packages/shared/src/index.test.ts`:
 
@@ -198,7 +198,7 @@ test("phase 5 DTO shapes support supermarkets, journeys, layouts, and consent", 
 });
 ```
 
-- [ ] **Step 2: Run the shared test and verify it fails**
+- [x] **Step 2: Run the shared test and verify it fails**
 
 Run:
 
@@ -208,7 +208,7 @@ corepack pnpm --filter @zbuy/shared test
 
 Expected: FAIL because the phase 5 DTOs are not exported.
 
-- [ ] **Step 3: Add phase 5 shared exports**
+- [x] **Step 3: Add phase 5 shared exports**
 
 Append these exports to `packages/shared/src/index.ts`:
 
@@ -389,7 +389,7 @@ export interface UpdateShoppingJourneyStopItemRequest {
 }
 ```
 
-- [ ] **Step 4: Run shared tests and commit**
+- [x] **Step 4: Run shared tests and commit**
 
 Run:
 
@@ -409,7 +409,7 @@ Expected: PASS.
 - Modify: `apps/api/prisma/schema.prisma`
 - Create: `apps/api/prisma/migrations/<timestamp>_supermarket_detection_layout/migration.sql`
 
-- [ ] **Step 1: Add phase 5 Prisma enums and relations**
+- [x] **Step 1: Add phase 5 Prisma enums and relations**
 
 Add these enums to `apps/api/prisma/schema.prisma`:
 
@@ -470,7 +470,7 @@ model Unit {
 }
 ```
 
-- [ ] **Step 2: Add phase 5 Prisma models**
+- [x] **Step 2: Add phase 5 Prisma models**
 
 Add these models to `apps/api/prisma/schema.prisma`:
 
@@ -666,7 +666,7 @@ model SupermarketLayoutConsentOverride {
 }
 ```
 
-- [ ] **Step 3: Create and apply the migration**
+- [x] **Step 3: Create and apply the migration**
 
 Run:
 
@@ -678,7 +678,7 @@ corepack pnpm --filter @zbuy/api prisma:generate
 
 Expected: Prisma creates a migration, applies it locally, and regenerates the client.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```powershell
 git add apps/api/prisma/schema.prisma apps/api/prisma/migrations
@@ -698,7 +698,7 @@ git commit -m "feat: add supermarket layout database schema"
 - Create: `apps/api/src/supermarkets/supermarkets.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write service tests**
+- [x] **Step 1: Write service tests**
 
 Create `apps/api/src/supermarkets/supermarkets.service.spec.ts` using the existing Prisma mocking style from `apps/api/src/purchase-locations/purchase-locations.service.spec.ts`.
 
@@ -713,7 +713,7 @@ The tests must assert:
 - `detect(ownerUserId, { latitude, longitude })` returns `status: "unknown"` when no owned active supermarket matches.
 - `get(otherUserId, supermarketId)` throws `NotFoundException` for a supermarket owned by another user.
 
-- [ ] **Step 2: Run the test and verify it fails**
+- [x] **Step 2: Run the test and verify it fails**
 
 Run:
 
@@ -723,7 +723,7 @@ corepack pnpm --filter @zbuy/api test -- supermarkets.service.spec.ts
 
 Expected: FAIL because the module does not exist.
 
-- [ ] **Step 3: Add DTOs and response mapper**
+- [x] **Step 3: Add DTOs and response mapper**
 
 Create `apps/api/src/supermarkets/dto.ts`:
 
@@ -777,7 +777,7 @@ export class DetectSupermarketDto {
 
 Create `apps/api/src/supermarkets/supermarket-response.ts` with `toSupermarketDto(supermarket, distanceMeters?)`.
 
-- [ ] **Step 4: Implement service detection logic**
+- [x] **Step 4: Implement service detection logic**
 
 Implement `SupermarketsService` with:
 
@@ -812,11 +812,11 @@ Detection returns:
 - `ambiguous` when two or more active supermarkets are within their radius.
 - `unknown` when none match.
 
-- [ ] **Step 5: Add controller/module and register module**
+- [x] **Step 5: Add controller/module and register module**
 
 Expose the endpoints from the spec under `/supermarkets` and register `SupermarketsModule` in `AppModule`.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test -- supermarkets.service.spec.ts
@@ -838,7 +838,7 @@ git commit -m "feat: add supermarkets API"
 - Create: `apps/api/src/layout-consent/layout-consent.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write consent tests**
+- [x] **Step 1: Write consent tests**
 
 Create tests proving:
 
@@ -849,7 +849,7 @@ Create tests proving:
 - Clearing a supermarket override falls back to global consent.
 - Users cannot read or update consent for another user's supermarket.
 
-- [ ] **Step 2: Add DTO and mapper**
+- [x] **Step 2: Add DTO and mapper**
 
 Create `dto.ts`:
 
@@ -868,7 +868,7 @@ export class UpdateLayoutContributionConsentDto {
 
 Create mapper returning `LayoutContributionConsentDto`.
 
-- [ ] **Step 3: Implement service**
+- [x] **Step 3: Implement service**
 
 Implement:
 
@@ -879,7 +879,7 @@ Implement:
 
 `updateForSupermarket(..., null)` deletes the override row.
 
-- [ ] **Step 4: Add controller/module and verify**
+- [x] **Step 4: Add controller/module and verify**
 
 Expose:
 
@@ -910,7 +910,7 @@ git commit -m "feat: add layout contribution consent API"
 - Create: `apps/api/src/supermarket-layouts/supermarket-layouts.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write layout tests**
+- [x] **Step 1: Write layout tests**
 
 Tests must prove:
 
@@ -923,7 +923,7 @@ Tests must prove:
 - Suggestions are listed separately from private placements.
 - Accepting a suggestion creates or reuses a private corridor and creates a private placement.
 
-- [ ] **Step 2: Add DTOs**
+- [x] **Step 2: Add DTOs**
 
 Create:
 
@@ -957,7 +957,7 @@ export class AcceptSharedLayoutSuggestionDto {
 }
 ```
 
-- [ ] **Step 3: Implement service**
+- [x] **Step 3: Implement service**
 
 Implement:
 
@@ -973,7 +973,7 @@ Implement:
 
 `acceptSuggestion` creates a corridor named `dto.corridorName` or `suggestion.suggestedCorridorName` when `dto.corridorId` is absent.
 
-- [ ] **Step 4: Add controller/module and verify**
+- [x] **Step 4: Add controller/module and verify**
 
 Run:
 
@@ -997,7 +997,7 @@ git commit -m "feat: add supermarket layout API"
 - Create: `apps/api/src/shopping-journeys/shopping-journeys.service.spec.ts`
 - Modify: `apps/api/src/app.module.ts`
 
-- [ ] **Step 1: Write journey service tests**
+- [x] **Step 1: Write journey service tests**
 
 Tests must cover:
 
@@ -1014,7 +1014,7 @@ Tests must cover:
 - Completing a journey converts remaining active items to `unprocessed`.
 - Canceling a journey cancels the active stop and keeps audit rows.
 
-- [ ] **Step 2: Add DTOs**
+- [x] **Step 2: Add DTOs**
 
 Create DTOs:
 
@@ -1060,7 +1060,7 @@ export class UpdateShoppingJourneyStopItemDto {
 }
 ```
 
-- [ ] **Step 3: Implement journey start and active retrieval**
+- [x] **Step 3: Implement journey start and active retrieval**
 
 `start(ownerUserId, dto)` must:
 
@@ -1073,7 +1073,7 @@ export class UpdateShoppingJourneyStopItemDto {
 7. Create the first active `ShoppingJourneyStop`.
 8. Create pending `ShoppingJourneyStopItem` rows for every active journey item.
 
-- [ ] **Step 4: Implement stop and item transitions**
+- [x] **Step 4: Implement stop and item transitions**
 
 Implement:
 
@@ -1091,7 +1091,7 @@ Rules:
 - Setting a corridor for a product updates `PrivateProductPlacement` automatically.
 - Actual price is accepted only when the final stop item status is `bought`.
 
-- [ ] **Step 5: Implement completion and cancellation**
+- [x] **Step 5: Implement completion and cancellation**
 
 `complete(ownerUserId, journeyId)` must:
 
@@ -1105,7 +1105,7 @@ Rules:
 - Cancel any active stop.
 - Set `status = canceled`.
 
-- [ ] **Step 6: Add controller/module and verify**
+- [x] **Step 6: Add controller/module and verify**
 
 Expose the routes from the spec. Run:
 
@@ -1126,7 +1126,7 @@ git commit -m "feat: add physical shopping journeys API"
 - Modify: `apps/api/src/purchase-history/purchase-history.service.spec.ts`
 - Modify: `packages/shared/src/index.ts`
 
-- [ ] **Step 1: Add history contract for journey stops**
+- [x] **Step 1: Add history contract for journey stops**
 
 Add a shared DTO:
 
@@ -1145,7 +1145,7 @@ export interface ShoppingJourneyHistoryStopDto extends ShoppingJourneyStopDto {
 }
 ```
 
-- [ ] **Step 2: Add history tests**
+- [x] **Step 2: Add history tests**
 
 Add tests proving:
 
@@ -1155,7 +1155,7 @@ Add tests proving:
 - Price filters include bought journey stop items only.
 - Ownership isolation is enforced.
 
-- [ ] **Step 3: Implement history queries**
+- [x] **Step 3: Implement history queries**
 
 Extend `PurchaseHistoryService` with:
 
@@ -1169,7 +1169,7 @@ Keep existing phase 4 session history endpoints stable and add:
 - `GET /purchase-history/journeys/:id`
 - `GET /purchase-history/journey-items`
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test -- purchase-history.service.spec.ts
@@ -1187,7 +1187,7 @@ git commit -m "feat: include shopping journeys in purchase history"
 - Modify: `apps/web/src/components/AppShell.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Add resource client functions**
+- [x] **Step 1: Add resource client functions**
 
 Add imports for phase 5 shared DTOs and implement:
 
@@ -1220,7 +1220,7 @@ Add imports for phase 5 shared DTOs and implement:
 - `completeShoppingJourney(id)`
 - `cancelShoppingJourney(id)`
 
-- [ ] **Step 2: Add navigation and styles**
+- [x] **Step 2: Add navigation and styles**
 
 Add `Supermercados` to `AppShell`.
 
@@ -1235,7 +1235,7 @@ Add CSS classes for:
 - `.suggestion-row`
 - `.consent-panel`
 
-- [ ] **Step 3: Verify and commit**
+- [x] **Step 3: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web typecheck
@@ -1252,7 +1252,7 @@ git commit -m "feat: add phase 5 web resources"
 - Create: `apps/web/src/app/purchases/PhysicalJourneyStartForm.tsx`
 - Modify: `apps/web/src/app/page.test.tsx`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1263,7 +1263,7 @@ Tests must verify:
 - Unknown detection shows create-supermarket fields.
 - Online context still uses the existing phase 4 session start flow.
 
-- [ ] **Step 2: Implement form**
+- [x] **Step 2: Implement form**
 
 `PhysicalJourneyStartForm` props:
 
@@ -1285,7 +1285,7 @@ Render:
 - Manual supermarket create form when unknown or user chooses create.
 - Start journey button.
 
-- [ ] **Step 3: Wire Purchases page**
+- [x] **Step 3: Wire Purchases page**
 
 The page should:
 
@@ -1295,7 +1295,7 @@ The page should:
 - Let physical starts call `startShoppingJourney`.
 - Let online starts keep calling `startShoppingSession`.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
@@ -1314,7 +1314,7 @@ git commit -m "feat: add physical journey start flow"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1326,13 +1326,13 @@ Tests must verify:
 - Switch supermarket prompt calls the switch API.
 - Complete journey calls the completion API.
 
-- [ ] **Step 2: Implement page**
+- [x] **Step 2: Implement page**
 
 `/journeys/[id]` loads the journey by id and renders `JourneyBoard`.
 
 If no active stop exists and the journey is active, render controls to detect/select/create the next supermarket.
 
-- [ ] **Step 3: Implement board grouping**
+- [x] **Step 3: Implement board grouping**
 
 `JourneyBoard` groups `journey.items` by:
 
@@ -1350,7 +1350,7 @@ For each item render:
 - Mark not found.
 - Move back to pending.
 
-- [ ] **Step 4: Implement stop controls**
+- [x] **Step 4: Implement stop controls**
 
 Add actions:
 
@@ -1359,7 +1359,7 @@ Add actions:
 - Switch supermarket.
 - Finish overall journey.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
@@ -1379,7 +1379,7 @@ git commit -m "feat: add active physical journey board"
 - Modify: `apps/web/src/app/page.test.tsx`
 - Modify: `apps/web/src/app/globals.css`
 
-- [ ] **Step 1: Write frontend tests**
+- [x] **Step 1: Write frontend tests**
 
 Tests must verify:
 
@@ -1390,7 +1390,7 @@ Tests must verify:
 - Global consent setting updates from account page.
 - Supermarket consent override updates from layout page.
 
-- [ ] **Step 2: Implement supermarket list**
+- [x] **Step 2: Implement supermarket list**
 
 `/supermarkets` renders:
 
@@ -1399,7 +1399,7 @@ Tests must verify:
 - Create supermarket form.
 - Link to each layout screen.
 
-- [ ] **Step 3: Implement layout page**
+- [x] **Step 3: Implement layout page**
 
 `/supermarkets/[id]/layout` renders:
 
@@ -1410,7 +1410,7 @@ Tests must verify:
 - Suggestions with accept buttons.
 - Per-supermarket contribution consent override.
 
-- [ ] **Step 4: Add global consent to account page**
+- [x] **Step 4: Add global consent to account page**
 
 Add a section to `/account`:
 
@@ -1418,7 +1418,7 @@ Add a section to `/account`:
 - Text explaining private layouts remain private.
 - Save action calling `updateLayoutContributionConsent`.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/web test
@@ -1437,7 +1437,7 @@ git commit -m "feat: add supermarket layout screens"
 - Modify: `tests/e2e/auth.spec.ts`
 - Modify: `tests/e2e/README.md`
 
-- [ ] **Step 1: Add API E2E**
+- [x] **Step 1: Add API E2E**
 
 Create an API E2E that:
 
@@ -1453,7 +1453,7 @@ Create an API E2E that:
 10. Completes the journey.
 11. Reads journey history.
 
-- [ ] **Step 2: Extend Playwright E2E**
+- [x] **Step 2: Extend Playwright E2E**
 
 Extend `tests/e2e/auth.spec.ts` after the phase 4 list/product setup:
 
@@ -1473,7 +1473,7 @@ await page.getByRole("button", { name: "Marcar Arroz como comprado" }).click();
 await page.getByRole("button", { name: "Finalizar parada neste supermercado" }).click();
 ```
 
-- [ ] **Step 3: Document prerequisites**
+- [x] **Step 3: Document prerequisites**
 
 Update `tests/e2e/README.md` with:
 
@@ -1481,7 +1481,7 @@ Update `tests/e2e/README.md` with:
 - Phase 5 migrations must be applied.
 - API must run on `3001` and web on `3000`.
 
-- [ ] **Step 4: Verify and commit**
+- [x] **Step 4: Verify and commit**
 
 ```powershell
 corepack pnpm --filter @zbuy/api test:e2e

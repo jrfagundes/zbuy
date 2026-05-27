@@ -371,4 +371,206 @@ describe("PurchaseHistoryService", () => {
     await expect(service.getSession("user-1", "session-active")).rejects.toBeInstanceOf(NotFoundException);
     await expect(service.getSession("user-1", "session-canceled")).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it("lists completed journey stops in purchase history", async () => {
+    const { service, prismaMock } = makeJourneyHistoryService();
+    prismaMock.shoppingJourneyStop.findMany.mockResolvedValue([makeJourneyStopRecord()]);
+
+    const result = await service.listJourneyStops("user-1");
+
+    expect(result.shoppingJourneyStops).toEqual([
+      expect.objectContaining({
+        id: "journey-stop-1",
+        journeyId: "journey-1",
+        supermarketId: "supermarket-1",
+        supermarketName: "Mercado Central",
+        sourceListName: "Compra semanal",
+        knownTotal: "12.5",
+        itemCounts: { bought: 1, notFound: 1, unprocessed: 0 }
+      })
+    ]);
+    expect(prismaMock.shoppingJourneyStop.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ journey: expect.objectContaining({ ownerUserId: "user-1", status: "completed" }) })
+      })
+    );
+  });
+
+  it("does not query active or canceled journeys as completed history", async () => {
+    const { service, prismaMock } = makeJourneyHistoryService();
+    prismaMock.shoppingJourneyStop.findMany.mockResolvedValue([]);
+
+    await service.listJourneyStops("user-1");
+
+    expect(prismaMock.shoppingJourneyStop.findMany.mock.calls[0][0].where.journey.status).toBe("completed");
+  });
+
+  it("lists journey stop items with their own supermarket context", async () => {
+    const { service, prismaMock } = makeJourneyHistoryService();
+    prismaMock.shoppingJourneyStopItem.findMany.mockResolvedValue([
+      makeJourneyStopItemRecord({ id: "stop-item-rice", status: "not_found", stop: makeJourneyStopRecord() }),
+      makeJourneyStopItemRecord({
+        id: "stop-item-beans",
+        status: "bought",
+        actualPrice: decimal("8.50"),
+        journeyItem: makeJourneyItemRecord({ id: "journey-item-beans", snapshotProductName: "Feijao" }),
+        stop: makeJourneyStopRecord({
+          id: "journey-stop-2",
+          supermarketId: "supermarket-2",
+          supermarket: { id: "supermarket-2", name: "Atacado Norte" }
+        })
+      })
+    ]);
+
+    const result = await service.listJourneyItems("user-1");
+
+    expect(result.purchaseHistoryJourneyItems.map((item) => ({
+      id: item.id,
+      status: item.status,
+      supermarketName: item.stop.supermarketName,
+      product: item.snapshotProductName
+    }))).toEqual([
+      { id: "stop-item-rice", status: "not_found", supermarketName: "Mercado Central", product: "Arroz Integral" },
+      { id: "stop-item-beans", status: "bought", supermarketName: "Atacado Norte", product: "Feijao" }
+    ]);
+  });
+
+  it("applies journey price filters only to bought stop items", async () => {
+    const { service, prismaMock } = makeJourneyHistoryService();
+    prismaMock.shoppingJourneyStopItem.findMany.mockResolvedValue([]);
+
+    await service.listJourneyItems("user-1", { minPrice: "8.00", maxPrice: "9.00" });
+
+    expect(prismaMock.shoppingJourneyStopItem.findMany.mock.calls[0][0].where.AND).toEqual(
+      expect.arrayContaining([{ status: "bought" }, { actualPrice: { gte: "8.00", lte: "9.00" } }])
+    );
+  });
+
+  it("isolates journey ownership in history detail", async () => {
+    const { service, prismaMock } = makeJourneyHistoryService();
+    prismaMock.shoppingJourney.findFirst.mockResolvedValue(null);
+
+    await expect(service.getJourney("user-1", "journey-other")).rejects.toBeInstanceOf(NotFoundException);
+    expect(prismaMock.shoppingJourney.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "journey-other", ownerUserId: "user-1", status: "completed" } })
+    );
+  });
 });
+
+function makeJourneyHistoryService() {
+  const prismaMock = {
+    shoppingJourney: {
+      findFirst: jest.fn()
+    },
+    shoppingJourneyStop: {
+      findMany: jest.fn()
+    },
+    shoppingJourneyStopItem: {
+      findMany: jest.fn()
+    }
+  };
+  const service = new PurchaseHistoryService(prismaMock as unknown as PrismaService);
+  return { service, prismaMock };
+}
+
+function makeJourneyRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "journey-1",
+    ownerUserId: "user-1",
+    sourceListId: "list-1",
+    snapshotSourceListName: "Compra semanal",
+    context: "physical",
+    status: "completed",
+    startedAt: new Date("2026-05-24T10:00:00.000Z"),
+    completedAt: new Date("2026-05-24T12:00:00.000Z"),
+    canceledAt: null,
+    knownTotal: decimal("12.50"),
+    boughtItemsWithoutPriceCount: 0,
+    createdAt: now,
+    updatedAt: now,
+    items: [
+      makeJourneyItemRecord({ finalStatus: "bought", finalActualPrice: decimal("12.50") }),
+      makeJourneyItemRecord({ id: "journey-item-beans", snapshotProductName: "Feijao", finalStatus: "not_found" })
+    ],
+    stops: [],
+    ...overrides
+  };
+}
+
+function makeJourneyStopRecord(overrides: Record<string, unknown> = {}) {
+  const journeyRecord = makeJourneyRecord();
+  return {
+    id: "journey-stop-1",
+    journeyId: "journey-1",
+    supermarketId: "supermarket-1",
+    status: "finished",
+    startedAt: new Date("2026-05-24T10:00:00.000Z"),
+    finishedAt: new Date("2026-05-24T11:00:00.000Z"),
+    exitDetectedAt: null,
+    continuedOutsideRadiusAt: null,
+    createdAt: now,
+    updatedAt: now,
+    supermarket: { id: "supermarket-1", name: "Mercado Central" },
+    journey: journeyRecord,
+    items: [
+      makeJourneyStopItemRecord({ status: "bought", journeyItem: journeyRecord.items[0] }),
+      makeJourneyStopItemRecord({ id: "stop-item-beans", status: "not_found", journeyItem: journeyRecord.items[1] })
+    ],
+    ...overrides
+  };
+}
+
+function makeJourneyItemRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "journey-item-rice",
+    journeyId: "journey-1",
+    sourceProductId: "product-rice",
+    sourceListItemId: "list-item-rice",
+    snapshotProductName: "Arroz Integral",
+    snapshotCategoryLabel: "Mercearia",
+    snapshotBrand: null,
+    quantity: decimal("1"),
+    unitId: "unit-kg",
+    snapshotUnitName: "Kilogram",
+    snapshotUnitAbbreviation: "kg",
+    expectedPrice: decimal("11.00"),
+    finalActualPrice: null,
+    finalStatus: "active",
+    priority: "normal",
+    notes: null,
+    sortOrder: 0,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides
+  };
+}
+
+function makeJourneyStopItemRecord(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "stop-item-rice",
+    stopId: "journey-stop-1",
+    journeyItemId: "journey-item-rice",
+    status: "bought",
+    actualPrice: decimal("12.50"),
+    corridorId: null,
+    notes: null,
+    createdAt: now,
+    updatedAt: now,
+    journeyItem: makeJourneyItemRecord(),
+    stop: {
+      id: "journey-stop-1",
+      journeyId: "journey-1",
+      supermarketId: "supermarket-1",
+      status: "finished",
+      startedAt: new Date("2026-05-24T10:00:00.000Z"),
+      finishedAt: new Date("2026-05-24T11:00:00.000Z"),
+      exitDetectedAt: null,
+      continuedOutsideRadiusAt: null,
+      createdAt: now,
+      updatedAt: now,
+      supermarket: { id: "supermarket-1", name: "Mercado Central" },
+      journey: makeJourneyRecord()
+    },
+    ...overrides
+  };
+}

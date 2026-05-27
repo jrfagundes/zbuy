@@ -25,4 +25,19 @@ export class PurchaseHistoryController {
   listItems(@CurrentUser() user: AuthUser, @Query() query: PurchaseHistoryQueryDto) {
     return this.purchaseHistory.listItems(user.id, query);
   }
+
+  @Get("journey-stops")
+  listJourneyStops(@CurrentUser() user: AuthUser, @Query() query: PurchaseHistoryQueryDto) {
+    return this.purchaseHistory.listJourneyStops(user.id, query);
+  }
+
+  @Get("journeys/:id")
+  getJourney(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.purchaseHistory.getJourney(user.id, id);
+  }
+
+  @Get("journey-items")
+  listJourneyItems(@CurrentUser() user: AuthUser, @Query() query: PurchaseHistoryQueryDto) {
+    return this.purchaseHistory.listJourneyItems(user.id, query);
+  }
 }

@@ -15,8 +15,8 @@ import type {
   SupermarketLayoutDto,
   UnitDto,
   UpdateShoppingSessionItemRequest,
-  UpsertShoppingListItemRequest,
-  UpsertSupermarketRequest
+  UpsertSupermarketRequest,
+  UpsertShoppingListItemRequest
 } from "./index.js";
 
 test("shared package exports compile-time DTO shapes", () => {

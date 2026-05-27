@@ -1,11 +1,16 @@
 import "@testing-library/jest-dom/vitest";
 import React from "react";
 import type {
+  LayoutContributionConsentDto,
   PurchaseLocationDto,
   ShoppingListSummaryDto,
+  ShoppingJourneyDetailDto,
+  ShoppingJourneySummaryDto,
   ShoppingSessionDetailDto,
   ShoppingSessionItemDto,
-  ShoppingSessionSummaryDto
+  ShoppingSessionSummaryDto,
+  SupermarketDto,
+  SupermarketLayoutDto
 } from "@zbuy/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
@@ -16,8 +21,11 @@ import LoginPage from "./page";
 import ProductsPage from "./products/page";
 import PurchasesPage from "./purchases/page";
 import PurchaseSessionPage from "./purchases/[id]/page";
+import SupermarketLayoutPage from "./supermarkets/[id]/layout/page";
+import SupermarketsPage from "./supermarkets/page";
 import HistoryDetailPage from "./history/[id]/page";
 import HistoryPage from "./history/page";
+import JourneyPage from "./journeys/[id]/page";
 import ResetPasswordPage from "./reset-password/page";
 import SignUpPage from "./signup/page";
 import * as resources from "../lib/resources";
@@ -77,10 +85,184 @@ describe("authentication screens", () => {
   });
 });
 
+describe("supermarket layout screens", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    routeParams.current = { id: "supermarket-1" };
+  });
+
+  const supermarket: SupermarketDto = {
+    id: "supermarket-1",
+    name: "Mercado Central",
+    address: "Rua A, 100",
+    city: "São Paulo",
+    latitude: "-23.5",
+    longitude: "-46.6",
+    presenceRadiusMeters: 500,
+    archivedAt: null,
+    createdAt: "2026-05-24T00:00:00.000Z",
+    updatedAt: "2026-05-24T00:00:00.000Z"
+  };
+
+  const layout: SupermarketLayoutDto = {
+    supermarketId: "supermarket-1",
+    presenceRadiusMeters: 500,
+    corridors: [
+      { id: "corridor-1", name: "Mercearia", sortOrder: 0, productCount: 2 },
+      { id: "corridor-2", name: "Hortifruti", sortOrder: 1, productCount: 1 }
+    ],
+    placements: [
+      { productId: "product-rice", corridorId: "corridor-1", lastConfirmedAt: "2026-05-24T10:00:00.000Z" },
+      { productId: "product-banana", corridorId: "corridor-2", lastConfirmedAt: "2026-05-24T10:00:00.000Z" }
+    ],
+    suggestions: [
+      {
+        id: "suggestion-1",
+        productId: "product-bread",
+        suggestedCorridorName: "Padaria",
+        confidenceScore: "0.82",
+        sourceContributionCount: 8
+      }
+    ]
+  };
+
+  const consent: LayoutContributionConsentDto = {
+    globalSharedLayoutContributionEnabled: true,
+    supermarketOverride: null,
+    effectiveSharedLayoutContributionEnabled: true
+  };
+
+  function mockSupermarketLayout(overrides: Partial<SupermarketLayoutDto> = {}) {
+    routeParams.current = { id: "supermarket-1" };
+    vi.spyOn(resources, "listSupermarkets").mockResolvedValue({ supermarkets: [supermarket] });
+    vi.spyOn(resources, "createSupermarket").mockResolvedValue({ ...supermarket, id: "supermarket-2", name: "Atacado Norte" });
+    vi.spyOn(resources, "getSupermarketLayout").mockResolvedValue({ ...layout, ...overrides });
+    vi.spyOn(resources, "updateSupermarket").mockResolvedValue({ ...supermarket, presenceRadiusMeters: 650 });
+    vi.spyOn(resources, "createSupermarketCorridor").mockResolvedValue({ id: "corridor-3", name: "Bebidas", sortOrder: 2, productCount: 0 });
+    vi.spyOn(resources, "updateSupermarketCorridor").mockResolvedValue({ id: "corridor-1", name: "Limpeza", sortOrder: 0, productCount: 2 });
+    vi.spyOn(resources, "reorderSupermarketCorridors").mockResolvedValue({
+      ...layout,
+      corridors: [
+        { id: "corridor-2", name: "Hortifruti", sortOrder: 0, productCount: 1 },
+        { id: "corridor-1", name: "Mercearia", sortOrder: 1, productCount: 2 }
+      ]
+    });
+    vi.spyOn(resources, "deleteSupermarketCorridor").mockResolvedValue(undefined);
+    vi.spyOn(resources, "acceptSharedLayoutSuggestion").mockResolvedValue({
+      productId: "product-bread",
+      corridorId: "corridor-3",
+      lastConfirmedAt: "2026-05-24T10:00:00.000Z"
+    });
+    vi.spyOn(resources, "getSupermarketLayoutConsent").mockResolvedValue(consent);
+    vi.spyOn(resources, "updateSupermarketLayoutConsent").mockResolvedValue({
+      ...consent,
+      supermarketOverride: false,
+      effectiveSharedLayoutContributionEnabled: false
+    });
+  }
+
+  it("renders active supermarkets and creates a new supermarket", async () => {
+    mockSupermarketLayout();
+
+    render(<SupermarketsPage />);
+
+    expect(await screen.findByText("Mercado Central")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Editar layout de Mercado Central" })).toHaveAttribute(
+      "href",
+      "/supermarkets/supermarket-1/layout"
+    );
+
+    fireEvent.change(screen.getByLabelText("Nome do supermercado"), { target: { value: "Atacado Norte" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar supermercado" }));
+
+    await waitFor(() => expect(resources.createSupermarket).toHaveBeenCalledWith({ name: "Atacado Norte" }));
+  });
+
+  it("edits corridors, radius, suggestions, and supermarket consent override", async () => {
+    mockSupermarketLayout();
+
+    render(<SupermarketLayoutPage />);
+
+    expect(await screen.findByText("Mercado Central")).toBeInTheDocument();
+    expect(screen.getByText("product-rice")).toBeInTheDocument();
+    expect(screen.getByText("Sem corredor definido")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Raio de presença em metros"), { target: { value: "650" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar raio" }));
+    await waitFor(() => expect(resources.updateSupermarket).toHaveBeenCalledWith("supermarket-1", { presenceRadiusMeters: 650 }));
+
+    fireEvent.change(screen.getByLabelText("Nome do novo corredor"), { target: { value: "Bebidas" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar corredor" }));
+    await waitFor(() => expect(resources.createSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", { name: "Bebidas" }));
+
+    fireEvent.change(screen.getByLabelText("Nome do corredor Mercearia"), { target: { value: "Limpeza" } });
+    fireEvent.click(screen.getByRole("button", { name: "Renomear Mercearia" }));
+    await waitFor(() =>
+      expect(resources.updateSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", "corridor-1", { name: "Limpeza" })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Mover Hortifruti para cima" }));
+    await waitFor(() =>
+      expect(resources.reorderSupermarketCorridors).toHaveBeenCalledWith("supermarket-1", {
+        corridorIds: ["corridor-2", "corridor-1", "corridor-3"]
+      })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Excluir Mercearia" }));
+    await waitFor(() => expect(resources.deleteSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", "corridor-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Aceitar sugestão Padaria para product-bread" }));
+    await waitFor(() =>
+      expect(resources.acceptSharedLayoutSuggestion).toHaveBeenCalledWith("supermarket-1", "suggestion-1", {
+        corridorName: "Padaria"
+      })
+    );
+
+    fireEvent.change(screen.getByLabelText("Compartilhamento deste supermercado"), { target: { value: "false" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar compartilhamento do supermercado" }));
+    await waitFor(() =>
+      expect(resources.updateSupermarketLayoutConsent).toHaveBeenCalledWith("supermarket-1", { supermarketOverride: false })
+    );
+  });
+
+  it("updates global layout contribution consent from account page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ user: { id: "user-1", name: "Junio", email: "junio@example.com" } }),
+        json: async () => ({ user: { id: "user-1", name: "Junio", email: "junio@example.com" } })
+      })
+    );
+    vi.spyOn(resources, "getLayoutContributionConsent").mockResolvedValue(consent);
+    vi.spyOn(resources, "updateLayoutContributionConsent").mockResolvedValue({
+      ...consent,
+      globalSharedLayoutContributionEnabled: false,
+      effectiveSharedLayoutContributionEnabled: false
+    });
+
+    render(<AccountPage />);
+
+    expect(await screen.findByText("Junio")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Contribuir com layouts compartilhados"));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar preferências de layout" }));
+
+    await waitFor(() =>
+      expect(resources.updateLayoutContributionConsent).toHaveBeenCalledWith({
+        globalSharedLayoutContributionEnabled: false
+      })
+    );
+  });
+});
+
 describe("purchase dashboard", () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
     routerPush.mockClear();
     routeParams.current = { id: "list-1" };
   });
@@ -140,6 +322,31 @@ describe("purchase dashboard", () => {
     itemCounts: { pending: 0, bought: 2, notFound: 0, unprocessed: 0 }
   };
 
+  const activeJourney: ShoppingJourneyDetailDto = {
+    id: "journey-active",
+    sourceListId: shoppingList.id,
+    sourceListName: shoppingList.name,
+    context: "physical",
+    status: "active",
+    startedAt: "2026-05-24T10:00:00.000Z",
+    completedAt: null,
+    canceledAt: null,
+    knownTotal: "0.00",
+    boughtItemsWithoutPriceCount: 0,
+    activeStop: {
+      id: "stop-1",
+      supermarketId: "supermarket-1",
+      supermarketName: "Mercado Central",
+      status: "active",
+      startedAt: "2026-05-24T10:00:00.000Z",
+      finishedAt: null,
+      exitDetectedAt: null,
+      continuedOutsideRadiusAt: null
+    },
+    items: [],
+    layout: null
+  };
+
   const canceledSession = {
     ...activeSession,
     id: "session-canceled",
@@ -149,7 +356,15 @@ describe("purchase dashboard", () => {
   };
 
   function mockPurchaseResources(active: typeof activeSession | null = null) {
+    vi.stubGlobal("navigator", {
+      geolocation: {
+        getCurrentPosition: vi.fn((resolve) =>
+          resolve({ coords: { latitude: -23.5, longitude: -46.6 } })
+        )
+      }
+    });
     vi.spyOn(resources, "getActiveShoppingSession").mockResolvedValue(active);
+    vi.spyOn(resources, "getActiveShoppingJourney").mockResolvedValue(null);
     vi.spyOn(resources, "listShoppingSessions").mockImplementation(async (status) => {
       if (status === "completed") return { shoppingSessions: [completedSession] };
       if (status === "canceled") return { shoppingSessions: [canceledSession] };
@@ -164,6 +379,36 @@ describe("purchase dashboard", () => {
     });
     vi.spyOn(resources, "createPurchaseLocation").mockResolvedValue({ ...location, id: "loc-2", name: "Atacado Norte" });
     vi.spyOn(resources, "startShoppingSession").mockResolvedValue({ ...activeSession, id: "session-new" });
+    vi.spyOn(resources, "detectSupermarket").mockResolvedValue({
+      status: "detected",
+      candidates: [
+        {
+          id: "supermarket-1",
+          name: "Mercado Central",
+          address: null,
+          city: null,
+          latitude: "-23.5",
+          longitude: "-46.6",
+          presenceRadiusMeters: 500,
+          archivedAt: null,
+          createdAt: "2026-05-24T00:00:00.000Z",
+          updatedAt: "2026-05-24T00:00:00.000Z"
+        }
+      ]
+    });
+    vi.spyOn(resources, "createSupermarket").mockResolvedValue({
+      id: "supermarket-created",
+      name: "Mercado Novo",
+      address: null,
+      city: null,
+      latitude: "-23.5",
+      longitude: "-46.6",
+      presenceRadiusMeters: 500,
+      archivedAt: null,
+      createdAt: "2026-05-24T00:00:00.000Z",
+      updatedAt: "2026-05-24T00:00:00.000Z"
+    });
+    vi.spyOn(resources, "startShoppingJourney").mockResolvedValue({ ...activeJourney, id: "journey-new" });
   }
 
   function deferred<T>() {
@@ -190,16 +435,15 @@ describe("purchase dashboard", () => {
     await waitFor(() => expect(resources.cancelShoppingSession).toHaveBeenCalledWith("session-active"));
   });
 
-  it("lists reusable shopping lists and locations in the start form", async () => {
+  it("renders the physical journey start form by default", async () => {
     mockPurchaseResources();
 
     render(<PurchasesPage />);
 
     expect(await screen.findByLabelText("Lista")).toBeInTheDocument();
     expect(screen.getByLabelText("Tipo")).toBeInTheDocument();
-    expect(screen.getByLabelText("Local")).toBeInTheDocument();
     expect(screen.getByRole("option", { name: "Compra semanal" })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Detectar supermercado" })).toBeInTheDocument();
   });
 
   it("links to full history and shows canceled recent sessions", async () => {
@@ -224,7 +468,7 @@ describe("purchase dashboard", () => {
     expect(resources.listShoppingSessions).not.toHaveBeenCalledWith(undefined, expect.any(Number));
   });
 
-  it("keeps locations aligned with the latest selected purchase type", async () => {
+  it("loads locations for the selected online purchase type", async () => {
     const onlineLocations = deferred<{ purchaseLocations: typeof onlineLocation[] }>();
     mockPurchaseResources();
     vi.mocked(resources.listPurchaseLocations).mockImplementation(async (type) => {
@@ -236,40 +480,147 @@ describe("purchase dashboard", () => {
 
     const typeSelect = await screen.findByLabelText("Tipo");
     fireEvent.change(typeSelect, { target: { value: "online" } });
-    fireEvent.change(typeSelect, { target: { value: "physical" } });
-
-    await waitFor(() => expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument());
 
     await act(async () => {
       onlineLocations.resolve({ purchaseLocations: [onlineLocation] });
       await onlineLocations.promise;
     });
 
-    expect(screen.getByRole("option", { name: "Mercado Central" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { name: "Loja Online" })).not.toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Loja Online" })).toBeInTheDocument();
   });
 
-  it("creates a purchase location inline", async () => {
+  it("detects the current supermarket using coordinates", async () => {
     mockPurchaseResources();
 
     render(<PurchasesPage />);
 
     await screen.findByLabelText("Lista");
-    fireEvent.click(screen.getByRole("button", { name: "Novo local" }));
-    fireEvent.change(screen.getByLabelText("Nome do local"), { target: { value: "Atacado Norte" } });
-    fireEvent.click(screen.getByRole("button", { name: "Criar local" }));
+    fireEvent.click(screen.getByRole("button", { name: "Detectar supermercado" }));
 
     await waitFor(() =>
-      expect(resources.createPurchaseLocation).toHaveBeenCalledWith({ type: "physical", name: "Atacado Norte" })
+      expect(resources.detectSupermarket).toHaveBeenCalledWith({ latitude: "-23.5", longitude: "-46.6" })
+    );
+    expect(await screen.findByLabelText("Mercado Central")).toBeInTheDocument();
+  });
+
+  it("starts a physical shopping journey from a detected supermarket", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.change(screen.getByLabelText("Lista"), { target: { value: "list-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Detectar supermercado" }));
+    await screen.findByLabelText("Mercado Central");
+    fireEvent.click(screen.getByRole("button", { name: "Iniciar compra" }));
+
+    await waitFor(() =>
+      expect(resources.startShoppingJourney).toHaveBeenCalledWith({
+        sourceListId: "list-1",
+        supermarketId: "supermarket-1",
+        latitude: "-23.5",
+        longitude: "-46.6"
+      })
+    );
+    expect(routerPush).toHaveBeenCalledWith("/journeys/journey-new");
+  });
+
+  it("shows candidate selection when supermarket detection is ambiguous", async () => {
+    mockPurchaseResources();
+    vi.mocked(resources.detectSupermarket).mockResolvedValue({
+      status: "ambiguous",
+      candidates: [
+        {
+          id: "supermarket-1",
+          name: "Mercado Central",
+          address: null,
+          city: null,
+          latitude: "-23.5",
+          longitude: "-46.6",
+          presenceRadiusMeters: 500,
+          archivedAt: null,
+          createdAt: "2026-05-24T00:00:00.000Z",
+          updatedAt: "2026-05-24T00:00:00.000Z"
+        },
+        {
+          id: "supermarket-2",
+          name: "Atacado Norte",
+          address: null,
+          city: null,
+          latitude: "-23.5001",
+          longitude: "-46.6001",
+          presenceRadiusMeters: 500,
+          archivedAt: null,
+          createdAt: "2026-05-24T00:00:00.000Z",
+          updatedAt: "2026-05-24T00:00:00.000Z"
+        }
+      ]
+    });
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.click(screen.getByRole("button", { name: "Detectar supermercado" }));
+
+    expect(await screen.findByText("Escolha o supermercado")).toBeInTheDocument();
+    expect(screen.getByLabelText("Atacado Norte")).toBeInTheDocument();
+  });
+
+  it("shows supermarket creation fields when detection is unknown", async () => {
+    mockPurchaseResources();
+    vi.mocked(resources.detectSupermarket).mockResolvedValue({ status: "unknown", candidates: [] });
+
+    render(<PurchasesPage />);
+
+    await screen.findByLabelText("Lista");
+    fireEvent.click(screen.getByRole("button", { name: "Detectar supermercado" }));
+    fireEvent.change(await screen.findByLabelText("Nome do supermercado"), { target: { value: "Mercado Novo" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar supermercado" }));
+
+    await waitFor(() =>
+      expect(resources.createSupermarket).toHaveBeenCalledWith({
+        name: "Mercado Novo",
+        latitude: "-23.5",
+        longitude: "-46.6",
+        presenceRadiusMeters: 500
+      })
     );
   });
 
-  it("starts a shopping session from the selected list and location", async () => {
+  it("creates and starts a physical journey manually without browser geolocation", async () => {
     mockPurchaseResources();
 
     render(<PurchasesPage />);
 
     await screen.findByLabelText("Lista");
+    fireEvent.change(screen.getByLabelText("Lista"), { target: { value: "list-1" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar supermercado manualmente" }));
+    fireEvent.change(await screen.findByLabelText("Nome do supermercado"), { target: { value: "Mercado Manual" } });
+    fireEvent.click(screen.getByRole("button", { name: "Criar e iniciar compra" }));
+
+    await waitFor(() =>
+      expect(resources.createSupermarket).toHaveBeenCalledWith({
+        name: "Mercado Manual",
+        presenceRadiusMeters: 500
+      })
+    );
+    await waitFor(() =>
+      expect(resources.startShoppingJourney).toHaveBeenCalledWith({
+        sourceListId: "list-1",
+        supermarketId: "supermarket-created"
+      })
+    );
+    expect(routerPush).toHaveBeenCalledWith("/journeys/journey-new");
+  });
+
+  it("keeps the online context using the existing session start flow", async () => {
+    mockPurchaseResources();
+
+    render(<PurchasesPage />);
+
+    const typeSelect = await screen.findByLabelText("Tipo");
+    fireEvent.change(typeSelect, { target: { value: "online" } });
+    await waitFor(() => expect(screen.getByLabelText("Local")).toBeInTheDocument());
     fireEvent.change(screen.getByLabelText("Lista"), { target: { value: "list-1" } });
     fireEvent.change(screen.getByLabelText("Local"), { target: { value: "loc-1" } });
     fireEvent.click(screen.getByRole("button", { name: "Iniciar compra" }));
@@ -278,10 +629,19 @@ describe("purchase dashboard", () => {
       expect(resources.startShoppingSession).toHaveBeenCalledWith({
         sourceListId: "list-1",
         purchaseLocationId: "loc-1",
-        context: "physical"
+        context: "online"
       })
     );
-    expect(routerPush).toHaveBeenCalledWith("/purchases/session-new");
+  });
+
+  it("shows active physical journey before active online session", async () => {
+    mockPurchaseResources(activeSession);
+    vi.mocked(resources.getActiveShoppingJourney).mockResolvedValue(activeJourney);
+
+    render(<PurchasesPage />);
+
+    expect(await screen.findByText("Compra física ativa")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Continuar jornada" })).toHaveAttribute("href", "/journeys/journey-active");
   });
 });
 
@@ -511,6 +871,237 @@ describe("purchase session detail", () => {
       updateRequest.resolve(makeSession([{ ...pendingItem, status: "bought" as const }, anotherPendingItem]));
       await updateRequest.promise;
     });
+  });
+});
+
+describe("active physical journey board", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+    routerPush.mockClear();
+    routeParams.current = { id: "list-1" };
+  });
+
+  const activeStop = {
+    id: "stop-1",
+    supermarketId: "supermarket-1",
+    supermarketName: "Mercado Central",
+    status: "active" as const,
+    startedAt: "2026-05-24T10:00:00.000Z",
+    finishedAt: null,
+    exitDetectedAt: null,
+    continuedOutsideRadiusAt: null
+  };
+
+  const layout = {
+    supermarketId: "supermarket-1",
+    presenceRadiusMeters: 500,
+    corridors: [
+      { id: "corridor-1", name: "Mercearia", sortOrder: 0, productCount: 1 },
+      { id: "corridor-2", name: "Hortifruti", sortOrder: 1, productCount: 1 }
+    ],
+    placements: [],
+    suggestions: []
+  };
+
+  const riceItem = {
+    id: "journey-item-rice",
+    sourceProductId: "product-rice",
+    snapshotProductName: "Arroz",
+    snapshotCategoryLabel: "Mercearia",
+    snapshotBrand: null,
+    quantity: "2",
+    unitId: "unit-kg",
+    snapshotUnitName: "Kilogram",
+    snapshotUnitAbbreviation: "kg",
+    expectedPrice: "10.00",
+    finalActualPrice: null,
+    finalStatus: "active" as const,
+    priority: "normal" as const,
+    notes: null,
+    sortOrder: 0,
+    activeStopItem: {
+      id: "stop-item-rice",
+      stopId: "stop-1",
+      journeyItemId: "journey-item-rice",
+      status: "pending" as const,
+      actualPrice: null,
+      corridorId: null,
+      notes: null
+    },
+    placement: { corridorId: "corridor-1", corridorName: "Mercearia" }
+  };
+
+  const bananaItem = {
+    ...riceItem,
+    id: "journey-item-banana",
+    sourceProductId: "product-banana",
+    snapshotProductName: "Banana",
+    snapshotCategoryLabel: "Hortifruti",
+    sortOrder: 1,
+    activeStopItem: {
+      ...riceItem.activeStopItem,
+      id: "stop-item-banana",
+      journeyItemId: "journey-item-banana"
+    },
+    placement: { corridorId: "corridor-2", corridorName: "Hortifruti" }
+  };
+
+  const oilItem = {
+    ...riceItem,
+    id: "journey-item-oil",
+    sourceProductId: "product-oil",
+    snapshotProductName: "Azeite",
+    sortOrder: 2,
+    activeStopItem: {
+      ...riceItem.activeStopItem,
+      id: "stop-item-oil",
+      journeyItemId: "journey-item-oil"
+    },
+    placement: null
+  };
+
+  function makeJourney(overrides: Partial<ShoppingJourneyDetailDto> = {}): ShoppingJourneyDetailDto {
+    return {
+      id: "journey-1",
+      sourceListId: "list-1",
+      sourceListName: "Compra semanal",
+      context: "physical",
+      status: "active",
+      startedAt: "2026-05-24T10:00:00.000Z",
+      completedAt: null,
+      canceledAt: null,
+      knownTotal: "0",
+      boughtItemsWithoutPriceCount: 0,
+      activeStop,
+      items: [riceItem, bananaItem, oilItem],
+      layout,
+      ...overrides
+    };
+  }
+
+  function mockJourney(journey = makeJourney()) {
+    routeParams.current = { id: journey.id };
+    vi.spyOn(resources, "getShoppingJourney").mockResolvedValue(journey);
+    vi.spyOn(resources, "updateShoppingJourneyStopItem").mockResolvedValue(journey);
+    vi.spyOn(resources, "finishJourneyStop").mockResolvedValue({ ...journey, activeStop: null });
+    vi.spyOn(resources, "continueJourneyStopOutsideRadius").mockResolvedValue(journey);
+    vi.spyOn(resources, "switchJourneyStopSupermarket").mockResolvedValue(journey);
+    vi.spyOn(resources, "createSupermarketCorridor").mockResolvedValue({ id: "corridor-3", name: "Bebidas", sortOrder: 2, productCount: 0 });
+    vi.spyOn(resources, "completeShoppingJourney").mockResolvedValue({ ...journey, status: "completed", completedAt: "2026-05-24T12:00:00.000Z" });
+    vi.spyOn(resources, "listSupermarkets").mockResolvedValue({
+      supermarkets: [
+        {
+          id: "supermarket-2",
+          name: "Atacado Norte",
+          address: null,
+          city: null,
+          latitude: null,
+          longitude: null,
+          presenceRadiusMeters: 500,
+          archivedAt: null,
+          createdAt: "2026-05-24T00:00:00.000Z",
+          updatedAt: "2026-05-24T00:00:00.000Z"
+        }
+      ]
+    });
+  }
+
+  it("groups items by corridor order and puts missing placements in Sem corredor definido", async () => {
+    mockJourney();
+
+    render(<JourneyPage />);
+
+    const mercearia = await screen.findByRole("heading", { name: "Mercearia" });
+    const hortifruti = screen.getByRole("heading", { name: "Hortifruti" });
+    const undefinedGroup = screen.getByRole("heading", { name: "Sem corredor definido" });
+
+    expect(mercearia.compareDocumentPosition(hortifruti) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hortifruti.compareDocumentPosition(undefinedGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Arroz")).toBeInTheDocument();
+    expect(screen.getByText("Banana")).toBeInTheDocument();
+    expect(screen.getByText("Azeite")).toBeInTheDocument();
+  });
+
+  it("marks an item bought with selected corridor and actual price", async () => {
+    const journey = makeJourney();
+    mockJourney(journey);
+
+    render(<JourneyPage />);
+
+    fireEvent.change(await screen.findByLabelText("Corredor de Arroz"), { target: { value: "corridor-1" } });
+    fireEvent.change(screen.getByLabelText("Preço real de Arroz"), { target: { value: "12.50" } });
+    fireEvent.click(screen.getByRole("button", { name: "Marcar Arroz como comprado" }));
+
+    await waitFor(() =>
+      expect(resources.updateShoppingJourneyStopItem).toHaveBeenCalledWith("journey-1", "stop-1", "stop-item-rice", {
+        status: "bought",
+        actualPrice: "12.50",
+        corridorId: "corridor-1"
+      })
+    );
+  });
+
+  it("creates a corridor from the active journey board", async () => {
+    mockJourney();
+
+    render(<JourneyPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Novo corredor" }));
+    fireEvent.change(screen.getByLabelText("Nome do corredor"), { target: { value: "Bebidas" } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar corredor" }));
+
+    await waitFor(() => expect(resources.createSupermarketCorridor).toHaveBeenCalledWith("supermarket-1", { name: "Bebidas" }));
+    expect(await screen.findByRole("heading", { name: "Bebidas" })).toBeInTheDocument();
+  });
+
+  it("marks not found and keeps the item visible for the next stop after finishing", async () => {
+    const notFoundJourney = makeJourney({
+      items: [{ ...oilItem, activeStopItem: { ...oilItem.activeStopItem, status: "not_found" } }]
+    });
+    mockJourney(notFoundJourney);
+    vi.mocked(resources.updateShoppingJourneyStopItem).mockResolvedValue(notFoundJourney);
+    vi.mocked(resources.finishJourneyStop).mockResolvedValue({ ...notFoundJourney, activeStop: null });
+
+    render(<JourneyPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar Azeite como não encontrado" }));
+    await waitFor(() => expect(resources.updateShoppingJourneyStopItem).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole("button", { name: "Finalizar supermercado atual" }));
+
+    expect(await screen.findByText("Escolher próximo supermercado")).toBeInTheDocument();
+    expect(screen.getAllByText("Azeite").length).toBeGreaterThan(0);
+  });
+
+  it("switches supermarket from the next-stop prompt", async () => {
+    const journey = makeJourney();
+    mockJourney(journey);
+
+    render(<JourneyPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Finalizar supermercado atual" }));
+    await screen.findByText("Escolher próximo supermercado");
+    await screen.findByRole("option", { name: "Atacado Norte" });
+    fireEvent.change(screen.getByLabelText("Próximo supermercado"), { target: { value: "supermarket-2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar no supermercado" }));
+
+    await waitFor(() =>
+      expect(resources.switchJourneyStopSupermarket).toHaveBeenCalledWith("journey-1", "stop-1", { supermarketId: "supermarket-2" })
+    );
+  });
+
+  it("finishes current stop and completes the journey", async () => {
+    const journey = makeJourney();
+    mockJourney(journey);
+
+    render(<JourneyPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Finalizar supermercado atual" }));
+    await waitFor(() => expect(resources.finishJourneyStop).toHaveBeenCalledWith("journey-1", "stop-1"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Finalizar compra completa" }));
+    await waitFor(() => expect(resources.completeShoppingJourney).toHaveBeenCalledWith("journey-1"));
+    expect(routerPush).toHaveBeenCalledWith("/history");
   });
 });
 

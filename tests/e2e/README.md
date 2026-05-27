@@ -6,8 +6,10 @@ Expected local services:
 
 - Web: `http://127.0.0.1:3000`
 - API: `http://127.0.0.1:3001`
-- Postgres migrated with all API Prisma migrations, including phase 4 shopping sessions and history
+- Postgres migrated with all API Prisma migrations, including phase 5 shopping journeys and supermarket layout tables
 - Units seeded with the API Prisma seed script
+- Browser geolocation is not required for the manual supermarket path covered by the E2E flow
+- API must be reachable on `http://127.0.0.1:3001` and web must be reachable on `http://127.0.0.1:3000`
 
 Start the local API and web stack before running Playwright:
 

@@ -66,22 +66,52 @@ enum ShoppingSessionItemStatus {
   unprocessed
 }
 
+enum ShoppingJourneyContext {
+  physical
+  online
+}
+
+enum ShoppingJourneyStatus {
+  active
+  completed
+  canceled
+}
+
+enum ShoppingJourneyStopStatus {
+  active
+  finished
+  canceled
+}
+
+enum ShoppingJourneyItemFinalStatus {
+  active
+  bought
+  not_found
+  unprocessed
+}
+
 model User {
-  id                String               @id @default(uuid())
-  name              String
-  email             String               @unique
-  emailVerifiedAt   DateTime?
-  disabledAt        DateTime?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  identities        AuthIdentity[]
-  sessions          Session[]
-  resetTokens       PasswordResetToken[]
-  auditEvents       AuditEvent[]
-  products          Product[]
-  shoppingLists     ShoppingList[]
-  purchaseLocations PurchaseLocation[]
-  shoppingSessions  ShoppingSession[]
+  id                                String                             @id @default(uuid())
+  name                              String
+  email                             String                             @unique
+  emailVerifiedAt                   DateTime?
+  disabledAt                        DateTime?
+  createdAt                         DateTime                           @default(now())
+  updatedAt                         DateTime                           @updatedAt
+  identities                        AuthIdentity[]
+  sessions                          Session[]
+  resetTokens                       PasswordResetToken[]
+  auditEvents                       AuditEvent[]
+  products                          Product[]
+  shoppingLists                     ShoppingList[]
+  purchaseLocations                 PurchaseLocation[]
+  shoppingSessions                  ShoppingSession[]
+  supermarkets                      Supermarket[]
+  shoppingJourneys                  ShoppingJourney[]
+  supermarketCorridors              SupermarketCorridor[]
+  privateProductPlacements          PrivateProductPlacement[]
+  layoutContributionConsent         LayoutContributionConsent?
+  supermarketLayoutConsentOverrides SupermarketLayoutConsentOverride[]
 }
 
 model AuthIdentity {
@@ -132,39 +162,43 @@ model AuditEvent {
 }
 
 model Unit {
-  id             String             @id @default(uuid())
+  id             String                @id @default(uuid())
   name           String
   abbreviation   String
   type           UnitType
-  allowsDecimals Boolean            @default(false)
-  active         Boolean            @default(true)
-  sortOrder      Int                @default(0)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  allowsDecimals Boolean               @default(false)
+  active         Boolean               @default(true)
+  sortOrder      Int                   @default(0)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
   products       Product[]
   listItems      ShoppingListItem[]
   sessionItems   ShoppingSessionItem[]
+  journeyItems   ShoppingJourneyItem[]
 
   @@unique([abbreviation, type])
   @@index([active, sortOrder])
 }
 
 model Product {
-  id             String             @id @default(uuid())
-  ownerUserId    String
-  name           String
-  categoryLabel  String
-  brand          String?
-  defaultUnitId  String
-  estimatedPrice Decimal?           @db.Decimal(10, 2)
-  notes          String?
-  archivedAt     DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  owner          User               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  defaultUnit    Unit               @relation(fields: [defaultUnitId], references: [id])
-  listItems      ShoppingListItem[]
-  sessionItems   ShoppingSessionItem[]
+  id                       String                    @id @default(uuid())
+  ownerUserId              String
+  name                     String
+  categoryLabel            String
+  brand                    String?
+  defaultUnitId            String
+  estimatedPrice           Decimal?                  @db.Decimal(10, 2)
+  notes                    String?
+  archivedAt               DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  owner                    User                      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  defaultUnit              Unit                      @relation(fields: [defaultUnitId], references: [id])
+  listItems                ShoppingListItem[]
+  sessionItems             ShoppingSessionItem[]
+  journeyItems             ShoppingJourneyItem[]
+  privateProductPlacements PrivateProductPlacement[]
+  sharedLayoutSuggestions  SharedLayoutSuggestion[]
 
   @@index([ownerUserId, archivedAt])
   @@index([ownerUserId, name])
@@ -184,27 +218,29 @@ model ShoppingList {
   duplicates           ShoppingList[]     @relation("ShoppingListDuplication")
   items                ShoppingListItem[]
   shoppingSessions     ShoppingSession[]
+  shoppingJourneys     ShoppingJourney[]
 
   @@index([ownerUserId, status])
   @@index([ownerUserId, name])
 }
 
 model ShoppingListItem {
-  id            String           @id @default(uuid())
+  id            String                @id @default(uuid())
   listId        String
   productId     String
-  quantity      Decimal          @db.Decimal(10, 3)
+  quantity      Decimal               @db.Decimal(10, 3)
   unitId        String
-  expectedPrice Decimal?         @db.Decimal(10, 2)
-  priority      ListItemPriority @default(normal)
+  expectedPrice Decimal?              @db.Decimal(10, 2)
+  priority      ListItemPriority      @default(normal)
   notes         String?
-  sortOrder     Int              @default(0)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  list          ShoppingList     @relation(fields: [listId], references: [id], onDelete: Cascade)
-  product       Product          @relation(fields: [productId], references: [id], onDelete: Restrict)
-  unit          Unit             @relation(fields: [unitId], references: [id])
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  list          ShoppingList          @relation(fields: [listId], references: [id], onDelete: Cascade)
+  product       Product               @relation(fields: [productId], references: [id], onDelete: Restrict)
+  unit          Unit                  @relation(fields: [unitId], references: [id])
   sessionItems  ShoppingSessionItem[]
+  journeyItems  ShoppingJourneyItem[]
 
   @@index([listId, sortOrder])
   @@index([productId])
@@ -230,23 +266,23 @@ model PurchaseLocation {
 }
 
 model ShoppingSession {
-  id                           String                @id @default(uuid())
+  id                           String                 @id @default(uuid())
   ownerUserId                  String
   sourceListId                 String
   snapshotSourceListName       String
   purchaseLocationId           String
   context                      ShoppingSessionContext
-  status                       ShoppingSessionStatus @default(active)
-  startedAt                    DateTime              @default(now())
+  status                       ShoppingSessionStatus  @default(active)
+  startedAt                    DateTime               @default(now())
   completedAt                  DateTime?
   canceledAt                   DateTime?
-  knownTotal                   Decimal               @default(0) @db.Decimal(12, 2)
-  boughtItemsWithoutPriceCount Int                   @default(0)
-  createdAt                    DateTime              @default(now())
-  updatedAt                    DateTime              @updatedAt
-  owner                        User                  @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
-  sourceList                   ShoppingList          @relation(fields: [sourceListId], references: [id], onDelete: Restrict)
-  purchaseLocation             PurchaseLocation      @relation(fields: [purchaseLocationId], references: [id], onDelete: Restrict)
+  knownTotal                   Decimal                @default(0) @db.Decimal(12, 2)
+  boughtItemsWithoutPriceCount Int                    @default(0)
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
+  owner                        User                   @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceList                   ShoppingList           @relation(fields: [sourceListId], references: [id], onDelete: Restrict)
+  purchaseLocation             PurchaseLocation       @relation(fields: [purchaseLocationId], references: [id], onDelete: Restrict)
   items                        ShoppingSessionItem[]
 
   @@index([ownerUserId, status])
@@ -283,4 +319,196 @@ model ShoppingSessionItem {
   @@index([sessionId, status, sortOrder])
   @@index([sourceProductId])
   @@index([sourceListItemId])
+}
+
+model Supermarket {
+  id                   String                             @id @default(uuid())
+  ownerUserId          String
+  name                 String
+  address              String?
+  city                 String?
+  latitude             Decimal?                           @db.Decimal(10, 7)
+  longitude            Decimal?                           @db.Decimal(10, 7)
+  presenceRadiusMeters Int                                @default(500)
+  archivedAt           DateTime?
+  createdAt            DateTime                           @default(now())
+  updatedAt            DateTime                           @updatedAt
+  owner                User                               @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  stops                ShoppingJourneyStop[]
+  corridors            SupermarketCorridor[]
+  privatePlacements    PrivateProductPlacement[]
+  sharedSuggestions    SharedLayoutSuggestion[]
+  consentOverrides     SupermarketLayoutConsentOverride[]
+
+  @@index([ownerUserId, archivedAt])
+  @@index([latitude, longitude])
+  @@index([name])
+}
+
+model ShoppingJourney {
+  id                           String                 @id @default(uuid())
+  ownerUserId                  String
+  sourceListId                 String
+  snapshotSourceListName       String
+  context                      ShoppingJourneyContext @default(physical)
+  status                       ShoppingJourneyStatus  @default(active)
+  startedAt                    DateTime               @default(now())
+  completedAt                  DateTime?
+  canceledAt                   DateTime?
+  knownTotal                   Decimal                @default(0) @db.Decimal(12, 2)
+  boughtItemsWithoutPriceCount Int                    @default(0)
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
+  owner                        User                   @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  sourceList                   ShoppingList           @relation(fields: [sourceListId], references: [id], onDelete: Restrict)
+  items                        ShoppingJourneyItem[]
+  stops                        ShoppingJourneyStop[]
+
+  @@index([ownerUserId, status])
+  @@index([ownerUserId, startedAt])
+  @@index([sourceListId])
+}
+
+model ShoppingJourneyItem {
+  id                       String                         @id @default(uuid())
+  journeyId                String
+  sourceProductId          String?
+  sourceListItemId         String?
+  snapshotProductName      String
+  snapshotCategoryLabel    String
+  snapshotBrand            String?
+  quantity                 Decimal                        @db.Decimal(10, 3)
+  unitId                   String?
+  snapshotUnitName         String
+  snapshotUnitAbbreviation String
+  expectedPrice            Decimal?                       @db.Decimal(10, 2)
+  finalActualPrice         Decimal?                       @db.Decimal(10, 2)
+  finalStatus              ShoppingJourneyItemFinalStatus @default(active)
+  priority                 ListItemPriority               @default(normal)
+  notes                    String?
+  sortOrder                Int                            @default(0)
+  createdAt                DateTime                       @default(now())
+  updatedAt                DateTime                       @updatedAt
+  journey                  ShoppingJourney                @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  sourceProduct            Product?                       @relation(fields: [sourceProductId], references: [id], onDelete: SetNull)
+  sourceListItem           ShoppingListItem?              @relation(fields: [sourceListItemId], references: [id], onDelete: SetNull)
+  unit                     Unit?                          @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  stopItems                ShoppingJourneyStopItem[]
+
+  @@index([journeyId, finalStatus, sortOrder])
+  @@index([sourceProductId])
+  @@index([sourceListItemId])
+}
+
+model ShoppingJourneyStop {
+  id                       String                    @id @default(uuid())
+  journeyId                String
+  supermarketId            String
+  status                   ShoppingJourneyStopStatus @default(active)
+  startedAt                DateTime                  @default(now())
+  finishedAt               DateTime?
+  exitDetectedAt           DateTime?
+  continuedOutsideRadiusAt DateTime?
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  journey                  ShoppingJourney           @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  supermarket              Supermarket               @relation(fields: [supermarketId], references: [id], onDelete: Restrict)
+  items                    ShoppingJourneyStopItem[]
+
+  @@index([journeyId, status])
+  @@index([supermarketId])
+}
+
+model ShoppingJourneyStopItem {
+  id            String                    @id @default(uuid())
+  stopId        String
+  journeyItemId String
+  status        ShoppingSessionItemStatus @default(pending)
+  actualPrice   Decimal?                  @db.Decimal(10, 2)
+  corridorId    String?
+  notes         String?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  stop          ShoppingJourneyStop       @relation(fields: [stopId], references: [id], onDelete: Cascade)
+  journeyItem   ShoppingJourneyItem       @relation(fields: [journeyItemId], references: [id], onDelete: Cascade)
+  corridor      SupermarketCorridor?      @relation(fields: [corridorId], references: [id], onDelete: SetNull)
+
+  @@unique([stopId, journeyItemId])
+  @@index([stopId, status])
+  @@index([journeyItemId])
+  @@index([corridorId])
+}
+
+model SupermarketCorridor {
+  id            String                    @id @default(uuid())
+  ownerUserId   String
+  supermarketId String
+  name          String
+  sortOrder     Int                       @default(0)
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  owner         User                      @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  supermarket   Supermarket               @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+  placements    PrivateProductPlacement[]
+  stopItems     ShoppingJourneyStopItem[]
+
+  @@unique([id, ownerUserId, supermarketId])
+  @@index([ownerUserId, supermarketId, sortOrder])
+}
+
+model PrivateProductPlacement {
+  id              String              @id @default(uuid())
+  ownerUserId     String
+  supermarketId   String
+  productId       String
+  corridorId      String
+  lastConfirmedAt DateTime            @default(now())
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  owner           User                @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  supermarket     Supermarket         @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+  product         Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  corridor        SupermarketCorridor @relation(fields: [corridorId, ownerUserId, supermarketId], references: [id, ownerUserId, supermarketId], onDelete: Cascade)
+
+  @@unique([ownerUserId, supermarketId, productId])
+  @@index([supermarketId, corridorId])
+}
+
+model SharedLayoutSuggestion {
+  id                      String      @id @default(uuid())
+  supermarketId           String
+  productId               String
+  suggestedCorridorName   String
+  confidenceScore         Decimal     @db.Decimal(4, 2)
+  sourceContributionCount Int         @default(0)
+  lastConfirmedAt         DateTime?
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  supermarket             Supermarket @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+  product                 Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([supermarketId, productId, suggestedCorridorName])
+  @@index([supermarketId, productId])
+}
+
+model LayoutContributionConsent {
+  id                                    String   @id @default(uuid())
+  ownerUserId                           String   @unique
+  globalSharedLayoutContributionEnabled Boolean  @default(false)
+  createdAt                             DateTime @default(now())
+  updatedAt                             DateTime @updatedAt
+  owner                                 User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+}
+
+model SupermarketLayoutConsentOverride {
+  id                              String      @id @default(uuid())
+  ownerUserId                     String
+  supermarketId                   String
+  sharedLayoutContributionEnabled Boolean
+  createdAt                       DateTime    @default(now())
+  updatedAt                       DateTime    @updatedAt
+  owner                           User        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  supermarket                     Supermarket @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerUserId, supermarketId])
 }
