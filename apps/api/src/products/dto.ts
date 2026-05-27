@@ -14,6 +14,11 @@ export class UpsertProductDto {
   @MaxLength(80)
   brand?: string | null;
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(48)
+  barcode?: string | null;
+
   @IsUUID()
   defaultUnitId!: string;
 

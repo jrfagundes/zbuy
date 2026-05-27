@@ -81,6 +81,10 @@ export function listProducts(query = "") {
   return apiRequest<{ products: ProductDto[] }>(`/products${params}`);
 }
 
+export function getProductByBarcode(barcode: string) {
+  return apiRequest<ProductDto>(`/products/barcode/${encodeURIComponent(barcode)}`);
+}
+
 export function createProduct(input: UpsertProductRequest) {
   return apiRequest<ProductDto>("/products", {
     method: "POST",

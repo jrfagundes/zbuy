@@ -680,6 +680,91 @@ fieldset.corridor-group > label input[type="radio"] {
   border-bottom: 0;
 }
 
+.barcode-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.barcode-field label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.scanner-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(13, 24, 41, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.scanner-modal {
+  display: grid;
+  gap: 14px;
+  width: min(520px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.scanner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scanner-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.scanner-viewport {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0d1829;
+  aspect-ratio: 4 / 3;
+}
+
+.scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.scanner-reticle {
+  position: absolute;
+  inset: 20% 10%;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  box-shadow: 0 0 0 9999px rgba(13, 24, 41, 0.45);
+}
+
+.session-card.highlighted {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  background: #eef4ff;
+  animation: highlight-pulse 0.4s ease;
+}
+
+@keyframes highlight-pulse {
+  0% { outline-color: transparent; background: var(--surface); }
+  50% { outline-color: var(--accent); background: #d6e8ff; }
+  100% { outline-color: var(--accent); background: #eef4ff; }
+}
+
 @media (max-width: 840px) {
   .auth-shell {
     grid-template-columns: 1fr;

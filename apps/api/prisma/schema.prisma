@@ -186,6 +186,7 @@ model Product {
   name                     String
   categoryLabel            String
   brand                    String?
+  barcode                  String?
   defaultUnitId            String
   estimatedPrice           Decimal?                  @db.Decimal(10, 2)
   notes                    String?
@@ -202,6 +203,7 @@ model Product {
 
   @@index([ownerUserId, archivedAt])
   @@index([ownerUserId, name])
+  @@index([ownerUserId, barcode])
 }
 
 model ShoppingList {

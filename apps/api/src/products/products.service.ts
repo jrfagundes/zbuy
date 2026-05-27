@@ -38,6 +38,7 @@ export class ProductsService {
         name: dto.name.trim(),
         categoryLabel: dto.categoryLabel.trim(),
         brand: cleanOptionalText(dto.brand),
+        barcode: cleanOptionalText(dto.barcode),
         defaultUnitId: dto.defaultUnitId,
         estimatedPrice: cleanOptionalText(dto.estimatedPrice),
         notes: cleanOptionalText(dto.notes)
@@ -61,12 +62,24 @@ export class ProductsService {
         name: dto.name.trim(),
         categoryLabel: dto.categoryLabel.trim(),
         brand: cleanOptionalText(dto.brand),
+        barcode: cleanOptionalText(dto.barcode),
         defaultUnitId: dto.defaultUnitId,
         estimatedPrice: cleanOptionalText(dto.estimatedPrice),
         notes: cleanOptionalText(dto.notes)
       },
       include: { defaultUnit: true }
     });
+    return toProductDto(product);
+  }
+
+  async getByBarcode(ownerUserId: string, barcode: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { ownerUserId, barcode: barcode.trim(), archivedAt: null },
+      include: { defaultUnit: true }
+    });
+    if (!product) {
+      throw new NotFoundException("Product not found for barcode");
+    }
     return toProductDto(product);
   }
 

@@ -69,6 +69,7 @@ function makeProduct(overrides: Partial<ProductRecord> = {}): ProductRecord {
     name: "Arroz",
     categoryLabel: "Mercearia",
     brand: "ZBuy",
+    barcode: null,
     defaultUnitId: "unit-kg",
     estimatedPrice: decimal("10.00"),
     notes: null,

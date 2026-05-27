@@ -33,6 +33,7 @@ export interface ProductDto {
   name: string;
   categoryLabel: string;
   brand: string | null;
+  barcode: string | null;
   defaultUnitId: string;
   defaultUnit: UnitDto;
   estimatedPrice: string | null;
@@ -46,6 +47,7 @@ export interface UpsertProductRequest {
   name: string;
   categoryLabel: string;
   brand?: string | null;
+  barcode?: string | null;
   defaultUnitId: string;
   estimatedPrice?: string | null;
   notes?: string | null;

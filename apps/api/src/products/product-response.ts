@@ -14,6 +14,7 @@ export function toProductDto(product: ProductWithUnit): ProductDto {
     name: product.name,
     categoryLabel: product.categoryLabel,
     brand: product.brand,
+    barcode: product.barcode,
     defaultUnitId: product.defaultUnitId,
     defaultUnit: toUnitDto(product.defaultUnit),
     estimatedPrice: decimalToString(product.estimatedPrice),

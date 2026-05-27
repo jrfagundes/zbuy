@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FormEvent, useEffect, useMemo, useState } from "react";
+import React, { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ShoppingJourneyDetailDto, ShoppingJourneyItemDto, SupermarketDto } from "@zbuy/shared";
 import {
@@ -8,10 +8,12 @@ import {
   continueJourneyStopOutsideRadius,
   createSupermarketCorridor,
   finishJourneyStop,
+  getProductByBarcode,
   listSupermarkets,
   switchJourneyStopSupermarket,
   updateShoppingJourneyStopItem
 } from "../../../lib/resources";
+import { BarcodeScanner } from "../../../components/BarcodeScanner";
 
 type Drafts = Record<string, { corridorId: string; actualPrice: string }>;
 
@@ -40,6 +42,10 @@ export function JourneyBoard({
   const [newCorridorName, setNewCorridorName] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanMessage, setScanMessage] = useState<string | null>(null);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+  const itemRefs = useRef<Record<string, HTMLElement | null>>({});
 
   useEffect(() => {
     setJourney(initialJourney);
@@ -181,8 +187,36 @@ export function JourneyBoard({
     }
   }
 
+  async function handleBarcodeDetected(barcode: string) {
+    setScanning(false);
+    setScanMessage(null);
+    setHighlightedItemId(null);
+    try {
+      const product = await getProductByBarcode(barcode);
+      const match = journey.items.find(
+        (item) => item.sourceProductId === product.id && item.finalStatus === "active"
+      );
+      if (match) {
+        setHighlightedItemId(match.id);
+        itemRefs.current[match.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => setHighlightedItemId(null), 3000);
+      } else {
+        setScanMessage(`"${product.name}" não está na lista ativa.`);
+      }
+    } catch {
+      setScanMessage("Produto não encontrado para este código de barras.");
+    }
+  }
+
   return (
     <section className="journey-shell">
+      {scanning ? (
+        <BarcodeScanner
+          onDetected={(barcode) => void handleBarcodeDetected(barcode)}
+          onClose={() => setScanning(false)}
+        />
+      ) : null}
+
       {journey.activeStop ? (
         <section className="journey-stop-banner">
           <div>
@@ -190,6 +224,9 @@ export function JourneyBoard({
             <p className="muted">Parada ativa neste supermercado.</p>
           </div>
           <div className="form-actions">
+            <button type="button" className="button secondary" disabled={saving} onClick={() => { setScanMessage(null); setScanning(true); }}>
+              Escanear produto
+            </button>
             <button type="button" className="button secondary" disabled={saving} onClick={() => void continueOutsideRadiusAction()}>
               Continuar fora do raio
             </button>
@@ -237,6 +274,7 @@ export function JourneyBoard({
       )}
 
       {message ? <p className="form-message error">{message}</p> : null}
+      {scanMessage ? <p className="form-message error">{scanMessage}</p> : null}
 
       {journey.activeStop ? (
         <section className="resource-panel">
@@ -273,7 +311,11 @@ export function JourneyBoard({
             {group.items.map((item) => {
               const draft = draftFor(item);
               return (
-                <article className="session-card" key={item.id}>
+                <article
+                  className={`session-card${highlightedItemId === item.id ? " highlighted" : ""}`}
+                  key={item.id}
+                  ref={(el) => { itemRefs.current[item.id] = el; }}
+                >
                   <div>
                     <strong>{item.snapshotProductName}</strong>
                     <p className="muted">

@@ -33,6 +33,11 @@ export class ProductsController {
     return this.products.create(user.id, body);
   }
 
+  @Get("barcode/:barcode")
+  getByBarcode(@CurrentUser() user: AuthUser, @Param("barcode") barcode: string) {
+    return this.products.getByBarcode(user.id, barcode);
+  }
+
   @Get(":id")
   get(@CurrentUser() user: AuthUser, @Param("id") id: string) {
     return this.products.get(user.id, id);
