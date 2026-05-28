@@ -612,15 +612,46 @@ textarea {
 }
 
 .journey-stop-banner {
+  display: grid;
+  gap: 14px;
+  border: 1px solid rgba(28, 105, 211, 0.22);
+  border-radius: 8px;
+  padding: 16px;
+  background: #eef4ff;
+}
+
+.stop-banner-top {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid rgba(28, 105, 211, 0.22);
-  border-radius: 8px;
-  padding: 16px;
-  background: #eef4ff;
+}
+
+.journey-progress {
+  display: grid;
+  gap: 5px;
+}
+
+.journey-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.journey-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(28, 105, 211, 0.15);
+  overflow: hidden;
+}
+
+.journey-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.5s ease;
 }
 
 .supermarket-grid {
@@ -757,6 +788,109 @@ fieldset.corridor-group > label input[type="radio"] {
   outline-offset: 2px;
   background: #eef4ff;
   animation: highlight-pulse 0.4s ease;
+}
+
+/* Compact card layout */
+.session-card.compact {
+  gap: 0;
+}
+
+.card-header {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.card-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card-info strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-info .muted {
+  font-size: 0.82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-quick-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.button.quick-buy {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  background: #d4edda;
+  border-color: #a8d5b5;
+  color: #1a7a3c;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.button.quick-buy:hover:not(:disabled) {
+  background: #b8dfc4;
+}
+
+.button.quick-not-found {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  background: #fde8e8;
+  border-color: #f5b8b8;
+  color: var(--danger);
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 8px;
+}
+
+.button.quick-not-found:hover:not(:disabled) {
+  background: #f9d0d0;
+}
+
+.button.icon-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  font-size: 0.7rem;
+}
+
+.card-detail {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+/* Category group — like corridor-group but unfilled */
+.category-group {
+  display: grid;
+  gap: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  background: #f7f9fc;
+}
+
+/* Search spanning full grid */
+.span-full {
+  grid-column: 1 / -1;
 }
 
 @keyframes highlight-pulse {

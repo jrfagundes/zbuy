@@ -13,7 +13,7 @@ import type {
   SupermarketLayoutDto
 } from "@zbuy/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import AccountPage from "./account/page";
 import ListDetailPage from "./lists/[id]/page";
 import ListsPage from "./lists/page";
@@ -955,6 +955,7 @@ describe("active physical journey board", () => {
     id: "journey-item-oil",
     sourceProductId: "product-oil",
     snapshotProductName: "Azeite",
+    snapshotCategoryLabel: "Condimentos",
     sortOrder: 2,
     activeStopItem: {
       ...riceItem.activeStopItem,
@@ -1011,17 +1012,17 @@ describe("active physical journey board", () => {
     });
   }
 
-  it("groups items by corridor order and puts missing placements in Sem corredor definido", async () => {
+  it("groups items by corridor order and groups items without placements by category", async () => {
     mockJourney();
 
     render(<JourneyPage />);
 
     const mercearia = await screen.findByRole("heading", { name: "Mercearia" });
     const hortifruti = screen.getByRole("heading", { name: "Hortifruti" });
-    const undefinedGroup = screen.getByRole("heading", { name: "Sem corredor definido" });
+    const condimentos = screen.getByRole("heading", { name: "Condimentos" });
 
     expect(mercearia.compareDocumentPosition(hortifruti) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(hortifruti.compareDocumentPosition(undefinedGroup) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hortifruti.compareDocumentPosition(condimentos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("Arroz")).toBeInTheDocument();
     expect(screen.getByText("Banana")).toBeInTheDocument();
     expect(screen.getByText("Azeite")).toBeInTheDocument();
@@ -1033,9 +1034,14 @@ describe("active physical journey board", () => {
 
     render(<JourneyPage />);
 
-    fireEvent.change(await screen.findByLabelText("Corredor de Arroz"), { target: { value: "corridor-1" } });
+    // Expand the Arroz card to access corridor/price fields
+    const arrozText = await screen.findByText("Arroz");
+    const arrozCard = arrozText.closest("article")!;
+    fireEvent.click(within(arrozCard).getByRole("button", { name: "Expandir detalhes" }));
+
+    fireEvent.change(screen.getByLabelText("Corredor de Arroz"), { target: { value: "corridor-1" } });
     fireEvent.change(screen.getByLabelText("Preço real de Arroz"), { target: { value: "12.50" } });
-    fireEvent.click(screen.getByRole("button", { name: "Marcar Arroz como comprado" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar e marcar como comprado" }));
 
     await waitFor(() =>
       expect(resources.updateShoppingJourneyStopItem).toHaveBeenCalledWith("journey-1", "stop-1", "stop-item-rice", {
@@ -1069,7 +1075,7 @@ describe("active physical journey board", () => {
 
     render(<JourneyPage />);
 
-    fireEvent.click(await screen.findByRole("button", { name: "Marcar Azeite como não encontrado" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Marcar Azeite como não encontrado" })); // quick action button (aria-label)
     await waitFor(() => expect(resources.updateShoppingJourneyStopItem).toHaveBeenCalled());
     fireEvent.click(screen.getByRole("button", { name: "Finalizar supermercado atual" }));
 
