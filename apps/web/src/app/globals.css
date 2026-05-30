@@ -1,15 +1,18 @@
 :root {
-  color-scheme: light;
-  --background: #f0f3f8;
-  --surface: #ffffff;
-  --surface-muted: #e8edf5;
-  --text: #0d1829;
-  --muted: #5c6880;
-  --border: #c8d2e4;
-  --accent: #1c69d3;
-  --accent-strong: #0855b4;
-  --danger: #b03030;
-  --shadow: 0 24px 70px rgba(13, 24, 41, 0.12);
+  color-scheme: dark;
+  --background: #151929;
+  --surface: #1d2338;
+  --surface-muted: #252d46;
+  --surface-input: #121726;
+  --text: #eef1ff;
+  --muted: #8a94b4;
+  --border: rgba(255, 255, 255, 0.09);
+  --accent: #4b96ff;
+  --accent-strong: #2b76e0;
+  --danger: #ff6060;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --radius: 10px;
+  --radius-lg: 16px;
 }
 
 * {
@@ -141,9 +144,9 @@ a {
 .pin {
   width: 18px;
   height: 18px;
-  border: 4px solid #f0f3f8;
+  border: 4px solid var(--surface);
   border-radius: 999px;
-  background: #1c69d3;
+  background: var(--accent);
 }
 
 .pin-a {
@@ -168,7 +171,7 @@ a {
   width: min(100%, 440px);
   padding: 38px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -197,19 +200,20 @@ a {
 .auth-form label {
   display: grid;
   gap: 8px;
-  color: #1a2744;
-  font-size: 0.92rem;
-  font-weight: 700;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .auth-form input {
   width: 100%;
-  min-height: 46px;
+  min-height: 48px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0 14px;
   color: var(--text);
-  background: #f7f9fc;
+  background: var(--surface-input);
   outline: none;
 }
 
@@ -217,9 +221,9 @@ select,
 textarea {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   color: var(--text);
-  background: #f7f9fc;
+  background: var(--surface-input);
   outline: none;
 }
 
@@ -236,7 +240,7 @@ textarea {
 
 .auth-form input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(28, 105, 211, 0.16);
+  box-shadow: 0 0 0 3px rgba(75, 150, 255, 0.2);
 }
 
 .checkbox-row {
@@ -244,8 +248,8 @@ textarea {
   gap: 10px;
   align-items: center;
   margin-top: 16px;
-  color: #1a2744;
-  font-weight: 700;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .checkbox-row input {
@@ -256,13 +260,26 @@ textarea {
 
 .auth-form button,
 .account-panel button {
-  min-height: 46px;
+  min-height: 48px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: var(--accent);
   color: white;
   cursor: pointer;
-  font-weight: 800;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(75, 150, 255, 0.32);
+  transition: box-shadow 0.14s ease, transform 0.1s ease;
+}
+
+.auth-form button:hover:not(:disabled),
+.account-panel button:hover:not(:disabled) {
+  background: var(--accent-strong);
+  box-shadow: 0 6px 20px rgba(75, 150, 255, 0.42);
+}
+
+.auth-form button:active:not(:disabled),
+.account-panel button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .auth-form button:disabled {
@@ -282,10 +299,17 @@ textarea {
   min-height: 44px;
   place-items: center;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
+  background: var(--surface-muted);
   color: var(--text);
   font-size: 0.9rem;
-  font-weight: 750;
+  font-weight: 600;
+  transition: background 0.14s ease;
+}
+
+.social-actions a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
 }
 
 .form-links {
@@ -315,13 +339,18 @@ textarea {
   min-height: 38px;
   place-items: center;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0 16px;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 700;
   transition: box-shadow 0.14s ease, transform 0.1s ease, background 0.14s ease;
   white-space: nowrap;
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .button:active:not(:disabled) {
@@ -331,33 +360,33 @@ textarea {
 .button.primary {
   background: var(--accent);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(28, 105, 211, 0.28);
+  box-shadow: 0 4px 16px rgba(75, 150, 255, 0.32);
 }
 
 .button.primary:hover:not(:disabled) {
   background: var(--accent-strong);
-  box-shadow: 0 4px 14px rgba(28, 105, 211, 0.38);
+  box-shadow: 0 6px 20px rgba(75, 150, 255, 0.42);
 }
 
 .button.secondary {
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-muted);
   color: var(--text);
 }
 
 .button.secondary:hover:not(:disabled) {
-  background: var(--surface-muted);
-  border-color: #a8b8d0;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 .button.danger {
-  border: 1px solid rgba(176, 48, 48, 0.25);
-  background: #fdf2f2;
+  border: 1px solid rgba(255, 96, 96, 0.25);
+  background: rgba(255, 96, 96, 0.12);
   color: var(--danger);
 }
 
 .button.danger:hover:not(:disabled) {
-  background: #fae8e8;
+  background: rgba(255, 96, 96, 0.2);
 }
 
 .account-actions {
@@ -381,8 +410,8 @@ textarea {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  background: #0d1829;
-  border-right: none;
+  background: #0f1422;
+  border-right: 1px solid var(--border);
   padding: 0;
 }
 
@@ -413,7 +442,6 @@ textarea {
   gap: 2px;
   padding: 12px 10px;
   margin-top: 0;
-  flex: 1;
 }
 
 .app-nav a {
@@ -457,6 +485,7 @@ textarea {
 }
 
 .nav-footer {
+  margin-top: auto;
   padding: 12px 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
@@ -508,18 +537,18 @@ textarea {
 
 .resource-panel {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(13, 24, 41, 0.06), 0 12px 40px rgba(13, 24, 41, 0.07);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
   padding: 24px;
   overflow: hidden;
 }
 
 .resource-panel h2 {
   margin: 0 0 16px;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -538,9 +567,10 @@ textarea {
 .search-field {
   display: grid;
   gap: 7px;
-  color: #1a2744;
-  font-size: 0.88rem;
-  font-weight: 750;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
 }
 
 .resource-form input,
@@ -548,10 +578,10 @@ textarea {
   width: 100%;
   min-height: 46px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0 14px;
   color: var(--text);
-  background: #f7f9fc;
+  background: var(--surface-input);
   outline: none;
 }
 
@@ -560,7 +590,7 @@ textarea {
 .resource-form textarea:focus,
 .search-field input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(28, 105, 211, 0.16);
+  box-shadow: 0 0 0 3px rgba(75, 150, 255, 0.2);
 }
 
 .span-2 {
@@ -597,15 +627,15 @@ textarea {
   align-items: center;
   justify-content: space-between;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 13px 16px;
-  background: var(--surface);
+  background: var(--surface-muted);
   transition: box-shadow 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
 }
 
 .resource-row:hover {
-  border-color: #b0c0d8;
-  box-shadow: 0 4px 16px rgba(13, 24, 41, 0.08);
+  border-color: rgba(75, 150, 255, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
   transform: translateY(-1px);
 }
 
@@ -670,10 +700,10 @@ textarea {
   display: grid;
   gap: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+  border-radius: var(--radius);
+  background: var(--surface-muted);
   padding: 16px;
-  box-shadow: 0 12px 28px rgba(13, 24, 41, 0.07);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .session-card strong {
@@ -690,9 +720,9 @@ textarea {
 .history-filters label {
   display: grid;
   gap: 7px;
-  color: #1a2744;
-  font-size: 0.88rem;
-  font-weight: 750;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .metric-row {
@@ -706,15 +736,16 @@ textarea {
 .status-pill {
   display: inline-flex;
   width: fit-content;
-  min-height: 28px;
+  min-height: 26px;
   align-items: center;
-  border: 1px solid rgba(28, 105, 211, 0.24);
+  border: 1px solid rgba(75, 150, 255, 0.3);
   border-radius: 999px;
   padding: 0 10px;
-  background: #eef4ff;
-  color: var(--accent-strong);
-  font-size: 0.8rem;
+  background: rgba(75, 150, 255, 0.15);
+  color: var(--accent);
+  font-size: 0.78rem;
   font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 .journey-shell {
@@ -725,10 +756,10 @@ textarea {
 .journey-stop-banner {
   display: grid;
   gap: 14px;
-  border: 1px solid rgba(28, 105, 211, 0.22);
-  border-radius: 8px;
+  border: 1px solid rgba(75, 150, 255, 0.25);
+  border-radius: var(--radius);
   padding: 16px;
-  background: #eef4ff;
+  background: rgba(75, 150, 255, 0.1);
 }
 
 .stop-banner-top {
@@ -752,9 +783,9 @@ textarea {
 }
 
 .journey-progress-track {
-  height: 8px;
+  height: 6px;
   border-radius: 999px;
-  background: rgba(28, 105, 211, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   overflow: hidden;
 }
 
@@ -784,9 +815,9 @@ textarea {
   display: grid;
   gap: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 16px;
-  background: #f7f9fc;
+  background: var(--surface);
 }
 
 fieldset.corridor-group > label {
@@ -806,7 +837,7 @@ fieldset.corridor-group > label input[type="radio"] {
 
 .undefined-corridor {
   border-style: dashed;
-  background: #f4f8ff;
+  background: rgba(75, 150, 255, 0.04);
 }
 
 .suggestion-row {
@@ -897,7 +928,7 @@ fieldset.corridor-group > label input[type="radio"] {
 .session-card.highlighted {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  background: #eef4ff;
+  background: rgba(75, 150, 255, 0.15);
   animation: highlight-pulse 0.4s ease;
 }
 
@@ -944,16 +975,16 @@ fieldset.corridor-group > label input[type="radio"] {
   height: 36px;
   min-width: 36px;
   padding: 0;
-  background: #d4edda;
-  border-color: #a8d5b5;
-  color: #1a7a3c;
+  background: rgba(61, 214, 140, 0.15);
+  border: 1px solid rgba(61, 214, 140, 0.3);
+  color: #3dd68c;
   font-size: 1rem;
   font-weight: 700;
   border-radius: 8px;
 }
 
 .button.quick-buy:hover:not(:disabled) {
-  background: #b8dfc4;
+  background: rgba(61, 214, 140, 0.25);
 }
 
 .button.quick-not-found {
@@ -961,8 +992,8 @@ fieldset.corridor-group > label input[type="radio"] {
   height: 36px;
   min-width: 36px;
   padding: 0;
-  background: #fde8e8;
-  border-color: #f5b8b8;
+  background: rgba(255, 96, 96, 0.12);
+  border: 1px solid rgba(255, 96, 96, 0.25);
   color: var(--danger);
   font-size: 1rem;
   font-weight: 700;
@@ -970,7 +1001,7 @@ fieldset.corridor-group > label input[type="radio"] {
 }
 
 .button.quick-not-found:hover:not(:disabled) {
-  background: #f9d0d0;
+  background: rgba(255, 96, 96, 0.2);
 }
 
 .button.icon-btn {
@@ -994,9 +1025,9 @@ fieldset.corridor-group > label input[type="radio"] {
   display: grid;
   gap: 12px;
   border: 1px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 16px;
-  background: #f7f9fc;
+  background: var(--surface);
 }
 
 /* Search spanning full grid */
@@ -1005,9 +1036,9 @@ fieldset.corridor-group > label input[type="radio"] {
 }
 
 @keyframes highlight-pulse {
-  0% { outline-color: transparent; background: var(--surface); }
-  50% { outline-color: var(--accent); background: #d6e8ff; }
-  100% { outline-color: var(--accent); background: #eef4ff; }
+  0% { outline-color: transparent; background: var(--surface-muted); }
+  50% { outline-color: var(--accent); background: rgba(75, 150, 255, 0.25); }
+  100% { outline-color: var(--accent); background: rgba(75, 150, 255, 0.15); }
 }
 
 @media (max-width: 840px) {
