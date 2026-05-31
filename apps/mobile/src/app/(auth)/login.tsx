@@ -99,12 +99,9 @@ export default function LoginScreen() {
 
           {/* Footer links */}
           <View style={styles.footer}>
+            <Text style={styles.footerText}>Ainda não tem conta?</Text>
             <Link href="/(auth)/signup" style={styles.link}>
               Criar conta
-            </Link>
-            <Text style={styles.separator}>·</Text>
-            <Link href="/(auth)/forgot-password" style={styles.link}>
-              Esqueci minha senha
             </Link>
           </View>
         </ScrollView>
@@ -189,13 +186,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
+  footerText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
   link: {
     fontSize: FontSize.sm,
     color: Colors.accent,
     fontWeight: FontWeight.semibold,
-  },
-  separator: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
   },
 });
