@@ -1,7 +1,10 @@
 import type {
   LayoutContributionConsentDto,
+  ProductDto,
   ShoppingListSummaryDto,
+  UnitDto,
   UpdateLayoutContributionConsentRequest,
+  UpsertProductRequest,
 } from '@zbuy/shared';
 import { apiRequest } from './api';
 
@@ -46,6 +49,37 @@ export function updateLayoutConsent(input: UpdateLayoutContributionConsentReques
     method: 'PATCH',
     body: JSON.stringify(input),
   });
+}
+
+// Units
+
+export function listUnits() {
+  return apiRequest<{ units: UnitDto[] }>('/units');
+}
+
+// Products
+
+export function listProducts(query = '') {
+  const params = query.trim() ? `?query=${encodeURIComponent(query.trim())}` : '';
+  return apiRequest<{ products: ProductDto[] }>(`/products${params}`);
+}
+
+export function createProduct(input: UpsertProductRequest) {
+  return apiRequest<ProductDto>('/products', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateProduct(id: string, input: UpsertProductRequest) {
+  return apiRequest<ProductDto>(`/products/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+}
+
+export function archiveProduct(id: string) {
+  return apiRequest<ProductDto>(`/products/${id}/archive`, { method: 'POST' });
 }
 
 // Shopping Lists
