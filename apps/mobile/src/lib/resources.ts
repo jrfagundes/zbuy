@@ -1,4 +1,8 @@
-import type { ShoppingListSummaryDto } from '@zbuy/shared';
+import type {
+  LayoutContributionConsentDto,
+  ShoppingListSummaryDto,
+  UpdateLayoutContributionConsentRequest,
+} from '@zbuy/shared';
 import { apiRequest } from './api';
 
 // Auth
@@ -25,6 +29,23 @@ export function signup(name: string, email: string, password: string) {
 
 export function logout() {
   return apiRequest<void>('/auth/logout', { method: 'POST' });
+}
+
+export function getCurrentUser() {
+  return apiRequest<{ user: AuthUser }>('/me');
+}
+
+// Layout contribution consent
+
+export function getLayoutConsent() {
+  return apiRequest<LayoutContributionConsentDto>('/layout-consent');
+}
+
+export function updateLayoutConsent(input: UpdateLayoutContributionConsentRequest) {
+  return apiRequest<LayoutContributionConsentDto>('/layout-consent', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
 }
 
 // Shopping Lists
