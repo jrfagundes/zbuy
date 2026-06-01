@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider, useAuth } from '@/context/auth';
 import { Colors } from '@/constants/theme';
@@ -26,10 +27,12 @@ function RootLayoutInner() {
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <StatusBar style="light" />
-      <RootLayoutInner />
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <StatusBar style="light" />
+        <RootLayoutInner />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
