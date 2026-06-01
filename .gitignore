@@ -8,3 +8,15 @@ dist/
 tsconfig.tsbuildinfo
 test-results/
 playwright-report/
+
+# Environment files (local secrets/config)
+.env
+.env.*
+!.env.example
+apps/*/.env
+apps/*/.env.local
+
+# Expo / React Native native build output
+apps/mobile/android/
+apps/mobile/ios/
+apps/mobile/.expo/

@@ -1,8 +1,8 @@
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { clearSessionCookie } from '@/lib/api';
-import { AuthUser, getMe, logout as apiLogout } from '@/lib/resources';
+import { clearSessionCookie, getSessionCookie } from '@/lib/api';
+import { AuthUser, logout as apiLogout } from '@/lib/resources';
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -28,11 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const segments = useSegments();
 
-  // Restore session on mount
+  // On mount: the backend has no session-restore endpoint, so we can't
+  // rehydrate the user object from the persisted cookie. Start logged out
+  // and clear any stale cookie so the user lands on the login screen.
   useEffect(() => {
-    getMe()
-      .then(({ user }) => setUser(user))
-      .catch(() => setUser(null))
+    getSessionCookie()
+      .then((cookie) => {
+        if (cookie) {
+          // Stale cookie with no way to resolve the user — discard it.
+          return clearSessionCookie();
+        }
+      })
+      .catch(() => {})
       .finally(() => setIsLoading(false));
   }, []);
 

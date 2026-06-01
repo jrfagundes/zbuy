@@ -27,10 +27,6 @@ export function logout() {
   return apiRequest<void>('/auth/logout', { method: 'POST' });
 }
 
-export function getMe() {
-  return apiRequest<{ user: AuthUser }>('/auth/me');
-}
-
 // Shopping Lists
 
 export function listShoppingLists() {
