@@ -2,6 +2,7 @@ import type {
   LayoutContributionConsentDto,
   ProductDto,
   ShoppingJourneyDetailDto,
+  ShoppingJourneyHistoryStopDto,
   ShoppingListDetailDto,
   ShoppingListSummaryDto,
   StartShoppingJourneyRequest,
@@ -194,6 +195,18 @@ export function cancelJourney(id: string) {
   return apiRequest<ShoppingJourneyDetailDto>(`/shopping-journeys/${id}/cancel`, {
     method: 'POST',
   });
+}
+
+// Purchase History
+
+export function listHistoryJourneyStops() {
+  return apiRequest<{ shoppingJourneyStops: ShoppingJourneyHistoryStopDto[] }>(
+    '/purchase-history/journey-stops'
+  );
+}
+
+export function getHistoryJourney(id: string) {
+  return apiRequest<ShoppingJourneyDetailDto>(`/purchase-history/journeys/${id}`);
 }
 
 export function updateJourneyStopItem(
