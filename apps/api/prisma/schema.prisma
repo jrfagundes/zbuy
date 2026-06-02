@@ -495,6 +495,19 @@ model SharedLayoutSuggestion {
   @@index([supermarketId, productId])
 }
 
+model ProductCatalog {
+  id            String   @id @default(uuid())
+  barcode       String   @unique
+  name          String
+  brand         String?
+  categoryLabel String
+  source        String   // "open_food_facts" | "cosmos"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([name])
+}
+
 model LayoutContributionConsent {
   id                                    String   @id @default(uuid())
   ownerUserId                           String   @unique

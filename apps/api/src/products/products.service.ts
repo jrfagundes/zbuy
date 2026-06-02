@@ -1,12 +1,16 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { CatalogService } from "../catalog/catalog.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { UpsertProductDto } from "./dto";
 import { toProductDto } from "./product-response";
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly catalog: CatalogService
+  ) {}
 
   async list(ownerUserId: string, query?: string, includeArchived = false) {
     const normalizedQuery = query?.trim();
@@ -73,14 +77,43 @@ export class ProductsService {
   }
 
   async getByBarcode(ownerUserId: string, barcode: string) {
-    const product = await this.prisma.product.findFirst({
-      where: { ownerUserId, barcode: barcode.trim(), archivedAt: null },
+    const trimmed = barcode.trim();
+
+    // 1. User's own product
+    const existing = await this.prisma.product.findFirst({
+      where: { ownerUserId, barcode: trimmed, archivedAt: null },
       include: { defaultUnit: true }
     });
-    if (!product) {
-      throw new NotFoundException("Product not found for barcode");
+    if (existing) return toProductDto(existing);
+
+    // 2. Global catalog (OFF + Cosmos cache) — auto-create for this user
+    const catalogEntry = await this.catalog.lookupBarcode(trimmed);
+    if (catalogEntry) {
+      const unit = await this.prisma.unit.findFirst({
+        where: { abbreviation: "unit", active: true }
+      });
+      if (!unit) throw new NotFoundException("Product not found for barcode");
+
+      const created = await this.prisma.product.create({
+        data: {
+          ownerUserId,
+          name: catalogEntry.name,
+          categoryLabel: catalogEntry.categoryLabel,
+          brand: catalogEntry.brand,
+          barcode: trimmed,
+          defaultUnitId: unit.id
+        },
+        include: { defaultUnit: true }
+      });
+      return toProductDto(created);
     }
-    return toProductDto(product);
+
+    throw new NotFoundException("Product not found for barcode");
+  }
+
+  /** Returns catalog suggestions matching a query (for autocomplete). */
+  async searchCatalog(query: string) {
+    return this.catalog.search(query);
   }
 
   async archive(ownerUserId: string, id: string) {
