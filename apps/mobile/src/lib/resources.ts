@@ -1,14 +1,24 @@
 import type {
   LayoutContributionConsentDto,
   ProductDto,
+  ShoppingJourneyDetailDto,
   ShoppingListDetailDto,
   ShoppingListSummaryDto,
+  StartShoppingJourneyRequest,
+  SupermarketDto,
   UnitDto,
   UpdateLayoutContributionConsentRequest,
   UpsertProductRequest,
   UpsertShoppingListItemRequest,
   UpsertShoppingListRequest,
 } from '@zbuy/shared';
+
+export interface UpdateShoppingJourneyStopItemRequest {
+  status?: 'pending' | 'bought' | 'not_found';
+  actualPrice?: string | null;
+  corridorId?: string | null;
+  notes?: string | null;
+}
 import { apiRequest } from './api';
 
 // Auth
@@ -149,4 +159,54 @@ export function deleteShoppingListItem(listId: string, itemId: string) {
   return apiRequest<ShoppingListDetailDto>(`/shopping-lists/${listId}/items/${itemId}`, {
     method: 'DELETE',
   });
+}
+
+// Supermarkets
+
+export function listSupermarkets() {
+  return apiRequest<{ supermarkets: SupermarketDto[] }>('/supermarkets');
+}
+
+// Shopping Journeys
+
+export function getActiveJourney() {
+  return apiRequest<ShoppingJourneyDetailDto | null>('/shopping-journeys/active');
+}
+
+export function getJourney(id: string) {
+  return apiRequest<ShoppingJourneyDetailDto>(`/shopping-journeys/${id}`);
+}
+
+export function startJourney(input: StartShoppingJourneyRequest) {
+  return apiRequest<ShoppingJourneyDetailDto>('/shopping-journeys', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function completeJourney(id: string) {
+  return apiRequest<ShoppingJourneyDetailDto>(`/shopping-journeys/${id}/complete`, {
+    method: 'POST',
+  });
+}
+
+export function cancelJourney(id: string) {
+  return apiRequest<ShoppingJourneyDetailDto>(`/shopping-journeys/${id}/cancel`, {
+    method: 'POST',
+  });
+}
+
+export function updateJourneyStopItem(
+  journeyId: string,
+  stopId: string,
+  itemId: string,
+  input: UpdateShoppingJourneyStopItemRequest
+) {
+  return apiRequest<ShoppingJourneyDetailDto>(
+    `/shopping-journeys/${journeyId}/stops/${stopId}/items/${itemId}`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }
+  );
 }
