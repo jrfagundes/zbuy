@@ -19,6 +19,7 @@ const prisma = new PrismaClient();
 
 const PAGE_SIZE = parseInt(process.env.OFF_PAGE_SIZE ?? "1000", 10);
 const MAX_PAGES = parseInt(process.env.OFF_MAX_PAGES ?? "50", 10);
+const START_PAGE = parseInt(process.env.OFF_START_PAGE ?? "1", 10);
 const DRY_RUN = process.env.OFF_DRY_RUN === "true";
 
 // ─── Category mapping ─────────────────────────────────────────────────────────
@@ -73,10 +74,13 @@ const CATEGORY_MAP: Record<string, string> = {
   "plant-based-foods": "Alimentos veganos"
 };
 
-function parseCategoryLabel(categoriesTags: string | undefined): string {
+function parseCategoryLabel(categoriesTags: string | string[] | undefined): string {
   if (!categoriesTags) return "Geral";
 
-  const tags = categoriesTags.split(",").map((t) => t.trim());
+  // API returns either a comma-separated string or an array
+  const tags = Array.isArray(categoriesTags)
+    ? categoriesTags.map((t) => t.trim())
+    : categoriesTags.split(",").map((t) => t.trim());
 
   // Prefer pt: tags first (Portuguese)
   const ptTag = tags.find((t) => t.startsWith("pt:"));
@@ -120,8 +124,8 @@ interface OFFProduct {
   product_name?: string;
   product_name_pt?: string;
   brands?: string;
-  categories_tags?: string;
-  countries_tags?: string;
+  categories_tags?: string | string[];
+  countries_tags?: string | string[];
 }
 
 interface OFFSearchResponse {
@@ -131,7 +135,7 @@ interface OFFSearchResponse {
   products: OFFProduct[];
 }
 
-async function fetchPage(page: number): Promise<OFFSearchResponse> {
+async function fetchPage(page: number, attempt = 1): Promise<OFFSearchResponse> {
   const url = new URL("https://world.openfoodfacts.org/cgi/search.pl");
   url.searchParams.set("action", "process");
   url.searchParams.set("tagtype_0", "countries");
@@ -146,6 +150,14 @@ async function fetchPage(page: number): Promise<OFFSearchResponse> {
     headers: { "User-Agent": "ZBuy Seed Script/1.0 (contato@zbuy.app)" },
     signal: AbortSignal.timeout(30_000)
   });
+
+  // Retry on 429 / 503 with exponential backoff (max 5 attempts)
+  if ((res.status === 429 || res.status === 503) && attempt <= 5) {
+    const backoff = Math.min(2 ** attempt * 2000, 60_000);
+    process.stdout.write(`\n  ⚠ HTTP ${res.status} na página ${page} — aguardando ${backoff / 1000}s (tentativa ${attempt}/5)...`);
+    await sleep(backoff);
+    return fetchPage(page, attempt + 1);
+  }
 
   if (!res.ok) throw new Error(`OFF API error: ${res.status} ${res.statusText}`);
   return res.json() as Promise<OFFSearchResponse>;
@@ -226,14 +238,17 @@ async function main() {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  // First page to discover total count
-  console.log("Buscando página 1...");
-  const firstPage = await fetchPage(1);
+  // First fetch to discover total count
+  const firstFetchPage = START_PAGE;
+  console.log(`Buscando página ${firstFetchPage}...`);
+  const firstPage = await fetchPage(firstFetchPage);
   const totalProducts = firstPage.count;
-  const totalPages = Math.min(MAX_PAGES, Math.ceil(totalProducts / PAGE_SIZE));
+  const totalPages = Math.min(START_PAGE + MAX_PAGES - 1, Math.ceil(totalProducts / PAGE_SIZE));
 
   console.log(`Total de produtos brasileiros no OFF: ~${totalProducts.toLocaleString("pt-BR")}`);
-  console.log(`Processando ${totalPages} páginas × ${PAGE_SIZE} itens = até ${(totalPages * PAGE_SIZE).toLocaleString("pt-BR")} produtos\n`);
+  console.log(`Processando páginas ${START_PAGE}–${totalPages} × ${PAGE_SIZE} itens = até ${((totalPages - START_PAGE + 1) * PAGE_SIZE).toLocaleString("pt-BR")} produtos`);
+  if (START_PAGE > 1) console.log(`  (retomando a partir da página ${START_PAGE})`);
+  console.log();
 
   async function processPage(pageData: OFFSearchResponse, pageNum: number) {
     const valid: ValidProduct[] = [];
@@ -247,17 +262,17 @@ async function main() {
     const inserted = await upsertBatch(valid);
     totalInserted += inserted;
 
-    const pct = Math.round((pageNum / totalPages) * 100);
+    const pct = Math.round(((pageNum - START_PAGE + 1) / (totalPages - START_PAGE + 1)) * 100);
     process.stdout.write(
       `\r  Página ${pageNum}/${totalPages} (${pct}%) — ${totalInserted.toLocaleString("pt-BR")} inseridos, ${totalSkipped} ignorados`
     );
   }
 
-  await processPage(firstPage, 1);
+  await processPage(firstPage, firstFetchPage);
 
-  for (let page = 2; page <= totalPages; page++) {
-    // Polite delay to respect OFF servers
-    await sleep(500);
+  for (let page = firstFetchPage + 1; page <= totalPages; page++) {
+    // Polite delay to respect OFF servers (1s between pages)
+    await sleep(1000);
     const data = await fetchPage(page);
     await processPage(data, page);
     if (data.products.length === 0) break;
