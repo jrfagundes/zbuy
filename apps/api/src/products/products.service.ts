@@ -12,12 +12,13 @@ export class ProductsService {
     private readonly catalog: CatalogService
   ) {}
 
-  async list(ownerUserId: string, query?: string, includeArchived = false) {
+  async list(ownerUserId: string, query?: string, includeArchived = false, scope: "mine" | "all" = "all") {
     const normalizedQuery = query?.trim();
     const products = await this.prisma.product.findMany({
       where: {
         ownerUserId,
         ...(includeArchived ? {} : { archivedAt: null }),
+        ...(scope === "mine" ? { origin: "user" } : {}),
         ...(normalizedQuery
           ? {
               OR: [

@@ -1,5 +1,5 @@
 import type { Product, Unit } from "@prisma/client";
-import type { ProductDto } from "@zbuy/shared";
+import type { ProductDto, ProductOrigin } from "@zbuy/shared";
 import { toUnitDto } from "../units/unit-response";
 
 type ProductWithUnit = Product & { defaultUnit: Unit };
@@ -15,6 +15,7 @@ export function toProductDto(product: ProductWithUnit): ProductDto {
     categoryLabel: product.categoryLabel,
     brand: product.brand,
     barcode: product.barcode,
+    origin: (product.origin as ProductOrigin) ?? "user",
     defaultUnitId: product.defaultUnitId,
     defaultUnit: toUnitDto(product.defaultUnit),
     estimatedPrice: decimalToString(product.estimatedPrice),

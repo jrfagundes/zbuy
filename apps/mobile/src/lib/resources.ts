@@ -73,9 +73,12 @@ export function listUnits() {
 
 // Products
 
-export function listProducts(query = '') {
-  const params = query.trim() ? `?query=${encodeURIComponent(query.trim())}` : '';
-  return apiRequest<{ products: ProductDto[] }>(`/products${params}`);
+export function listProducts(query = '', scope: 'mine' | 'all' = 'all') {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set('query', query.trim());
+  if (scope === 'mine') params.set('scope', 'mine');
+  const qs = params.toString();
+  return apiRequest<{ products: ProductDto[] }>(`/products${qs ? `?${qs}` : ''}`);
 }
 
 export function createProduct(input: UpsertProductRequest) {

@@ -32,6 +32,7 @@ function product(overrides: Record<string, unknown> = {}) {
     name: "Arroz",
     categoryLabel: "Mercearia",
     brand: null,
+    origin: "user",
     defaultUnitId: "unit-1",
     estimatedPrice: null,
     notes: null,

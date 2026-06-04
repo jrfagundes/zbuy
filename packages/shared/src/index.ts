@@ -28,12 +28,15 @@ export interface UnitDto {
   sortOrder: number;
 }
 
+export type ProductOrigin = "user" | "catalog";
+
 export interface ProductDto {
   id: string;
   name: string;
   categoryLabel: string;
   brand: string | null;
   barcode: string | null;
+  origin: ProductOrigin;
   defaultUnitId: string;
   defaultUnit: UnitDto;
   estimatedPrice: string | null;

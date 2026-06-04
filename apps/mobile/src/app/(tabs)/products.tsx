@@ -24,21 +24,24 @@ import {
   updateProduct,
 } from '@/lib/resources';
 
+type Scope = 'mine' | 'all';
+
 export default function ProductsScreen() {
   const [units, setUnits] = useState<UnitDto[]>([]);
   const [products, setProducts] = useState<ProductDto[]>([]);
   const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<Scope>('all');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [refreshing, setRefreshing] = useState(false);
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<ProductDto | null>(null);
 
-  const load = useCallback(async (search = '') => {
+  const load = useCallback(async (search = '', currentScope: Scope = 'all') => {
     try {
       const [{ units: unitList }, { products: productList }] = await Promise.all([
         listUnits(),
-        listProducts(search),
+        listProducts(search, currentScope),
       ]);
       setUnits(unitList);
       setProducts(productList);
@@ -52,19 +55,19 @@ export default function ProductsScreen() {
     void load();
   }, [load]);
 
-  // Debounced search
+  // Debounced search + scope changes
   useEffect(() => {
     const handle = setTimeout(() => {
-      void load(query);
+      void load(query, scope);
     }, 350);
     return () => clearTimeout(handle);
-  }, [query, load]);
+  }, [query, scope, load]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load(query);
+    await load(query, scope);
     setRefreshing(false);
-  }, [load, query]);
+  }, [load, query, scope]);
 
   function openCreate() {
     setEditing(null);
@@ -84,7 +87,7 @@ export default function ProductsScreen() {
     }
     setSheetOpen(false);
     setEditing(null);
-    await load(query);
+    await load(query, scope);
   }
 
   function confirmArchive(product: ProductDto) {
@@ -96,7 +99,7 @@ export default function ProductsScreen() {
         onPress: async () => {
           try {
             await archiveProduct(product.id);
-            await load(query);
+            await load(query, scope);
           } catch {
             Alert.alert('Erro', 'Não foi possível arquivar o produto.');
           }
@@ -112,6 +115,28 @@ export default function ProductsScreen() {
         <Text style={styles.count}>
           {status === 'ready' ? `${products.length}` : ''}
         </Text>
+      </View>
+
+      {/* Scope toggle */}
+      <View style={styles.segmentWrapper}>
+        <View style={styles.segment}>
+          <Pressable
+            style={[styles.segmentBtn, scope === 'all' && styles.segmentBtnActive]}
+            onPress={() => setScope('all')}
+          >
+            <Text style={[styles.segmentText, scope === 'all' && styles.segmentTextActive]}>
+              Todos
+            </Text>
+          </Pressable>
+          <Pressable
+            style={[styles.segmentBtn, scope === 'mine' && styles.segmentBtnActive]}
+            onPress={() => setScope('mine')}
+          >
+            <Text style={[styles.segmentText, scope === 'mine' && styles.segmentTextActive]}>
+              Meus produtos
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Search */}
@@ -223,10 +248,18 @@ function ProductRow({
         </Text>
       </View>
       <View style={styles.rowInfo}>
-        <Text style={styles.rowName} numberOfLines={1}>
-          {product.name}
-        </Text>
+        <View style={styles.rowNameLine}>
+          <Text style={styles.rowName} numberOfLines={1}>
+            {product.name}
+          </Text>
+          {product.origin === 'catalog' && (
+            <View style={styles.catalogBadge}>
+              <Text style={styles.catalogBadgeText}>catálogo</Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.rowMeta} numberOfLines={1}>
+          {product.brand ? `${product.brand} · ` : ''}
           {product.categoryLabel} · {product.defaultUnit.abbreviation}
           {product.estimatedPrice ? ` · R$ ${product.estimatedPrice}` : ''}
         </Text>
@@ -259,6 +292,39 @@ const styles = StyleSheet.create({
     fontSize: FontSize.base,
     fontWeight: FontWeight.bold,
     color: Colors.textSecondary,
+  },
+
+  // Scope segment
+  segmentWrapper: {
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Spacing.md,
+  },
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceInput,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 3,
+    gap: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBtnActive: {
+    backgroundColor: Colors.accent,
+  },
+  segmentText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  segmentTextActive: {
+    color: '#ffffff',
   },
 
   // Search
@@ -345,10 +411,30 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  rowNameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   rowName: {
+    flexShrink: 1,
     fontSize: FontSize.base,
     fontWeight: FontWeight.semibold,
     color: Colors.text,
+  },
+  catalogBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceMuted,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  catalogBadgeText: {
+    fontSize: 10,
+    fontWeight: FontWeight.bold,
+    color: Colors.textSecondary,
+    letterSpacing: 0.3,
   },
   rowMeta: {
     fontSize: FontSize.sm,

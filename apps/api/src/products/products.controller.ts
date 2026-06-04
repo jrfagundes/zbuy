@@ -24,8 +24,13 @@ export class ProductsController {
   constructor(private readonly products: ProductsService) {}
 
   @Get()
-  list(@CurrentUser() user: AuthUser, @Query("query") query?: string, @Query("includeArchived") includeArchived?: string) {
-    return this.products.list(user.id, query, includeArchived === "true");
+  list(
+    @CurrentUser() user: AuthUser,
+    @Query("query") query?: string,
+    @Query("includeArchived") includeArchived?: string,
+    @Query("scope") scope?: string
+  ) {
+    return this.products.list(user.id, query, includeArchived === "true", scope === "mine" ? "mine" : "all");
   }
 
   @Post()

@@ -70,6 +70,7 @@ function makeProduct(overrides: Partial<ProductRecord> = {}): ProductRecord {
     categoryLabel: "Mercearia",
     brand: "ZBuy",
     barcode: null,
+    origin: "user",
     defaultUnitId: "unit-kg",
     estimatedPrice: decimal("10.00"),
     notes: null,

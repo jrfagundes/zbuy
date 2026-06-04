@@ -15,7 +15,8 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed-units": "ts-node prisma/seed-units.ts",
     "prisma:seed-catalog": "ts-node prisma/seed-products-off.ts",
-    "prisma:seed-catalog:dry": "cross-env OFF_DRY_RUN=true ts-node prisma/seed-products-off.ts"
+    "prisma:seed-catalog:dry": "cross-env OFF_DRY_RUN=true ts-node prisma/seed-products-off.ts",
+    "prisma:import-catalog": "ts-node prisma/import-catalog-to-products.ts"
   },
   "dependencies": {
     "@zbuy/shared": "workspace:*",
