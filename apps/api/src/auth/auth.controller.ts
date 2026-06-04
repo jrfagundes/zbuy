@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, Req, Res, UseGuards, UsePipes, Valida
 import type { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { toAuthResponse } from "./auth-response";
-import { LoginDto, OAuthTestCallbackDto, PasswordResetConfirmDto, PasswordResetRequestDto, SignUpDto } from "./dto";
+import { GoogleLoginDto, LoginDto, OAuthTestCallbackDto, PasswordResetConfirmDto, PasswordResetRequestDto, SignUpDto } from "./dto";
 import { OAuthService } from "./oauth.service";
 import { OAuthTestModeGuard } from "./oauth-test-mode.guard";
 import { clearSessionCookie, getSessionCookieName, setSessionCookie } from "./session-cookie";
@@ -58,6 +58,13 @@ export class AuthController {
   @HttpCode(200)
   async confirmPasswordReset(@Body() body: PasswordResetConfirmDto, @Req() req: Request) {
     return this.auth.confirmPasswordReset(body.token, body.password, req.requestId);
+  }
+
+  @Post("google")
+  async google(@Body() body: GoogleLoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const result = await this.oauth.loginWithGoogle(body.idToken, req.requestId);
+    setSessionCookie(res, result.sessionToken);
+    return toAuthResponse(result.user);
   }
 
   @Post("google/test-callback")

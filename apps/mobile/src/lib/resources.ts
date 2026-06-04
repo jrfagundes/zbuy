@@ -45,6 +45,13 @@ export function signup(name: string, email: string, password: string) {
   });
 }
 
+export function loginWithGoogle(idToken: string) {
+  return apiRequest<{ user: AuthUser }>('/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ idToken }),
+  });
+}
+
 export function logout() {
   return apiRequest<void>('/auth/logout', { method: 'POST' });
 }

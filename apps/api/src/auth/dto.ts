@@ -49,3 +49,9 @@ export class OAuthTestCallbackDto {
   @MinLength(1)
   name!: string;
 }
+
+export class GoogleLoginDto {
+  @IsString()
+  @MinLength(1)
+  idToken!: string;
+}

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { GoogleButton } from '@/components/auth/GoogleButton';
 import { Input } from '@/components/ui/Input';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/context/auth';
@@ -106,6 +107,14 @@ export default function SignupScreen() {
               fullWidth
               disabled={!isValid}
             />
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <GoogleButton onSuccess={signIn} label="Cadastrar com Google" />
           </View>
 
           {/* Footer */}
@@ -135,6 +144,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing['2xl'],
     paddingVertical: Spacing['3xl'],
   },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginVertical: Spacing.xs,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: FontWeight.medium },
 
   brand: {
     flexDirection: 'row',
