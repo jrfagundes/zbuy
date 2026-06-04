@@ -213,11 +213,26 @@ function ListRow({
         <Text style={styles.rowIconText}>📋</Text>
       </View>
       <View style={styles.rowInfo}>
-        <Text style={styles.rowName} numberOfLines={1}>
-          {list.name}
-        </Text>
+        <View style={styles.rowNameLine}>
+          <Text style={styles.rowName} numberOfLines={1}>
+            {list.name}
+          </Text>
+          {!list.isOwner && (
+            <View style={styles.sharedBadge}>
+              <Text style={styles.sharedBadgeText}>compartilhada</Text>
+            </View>
+          )}
+          {list.isOwner && list.memberCount > 0 && (
+            <View style={styles.sharedBadge}>
+              <Text style={styles.sharedBadgeText}>
+                ✓ {list.memberCount} {list.memberCount === 1 ? 'membro' : 'membros'}
+              </Text>
+            </View>
+          )}
+        </View>
         <Text style={styles.rowMeta} numberOfLines={1}>
           {list.itemCount} {list.itemCount === 1 ? 'item' : 'itens'}
+          {!list.isOwner && list.sharedByName ? ` · de ${list.sharedByName}` : ''}
           {list.description ? ` · ${list.description}` : ''}
         </Text>
       </View>
@@ -278,7 +293,17 @@ const styles = StyleSheet.create({
   },
   rowIconText: { fontSize: 20 },
   rowInfo: { flex: 1, gap: 2 },
-  rowName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text },
+  rowNameLine: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  rowName: { flexShrink: 1, fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text },
+  sharedBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: Radius.full,
+    backgroundColor: `${Colors.accent}22`,
+    borderWidth: 1,
+    borderColor: Colors.borderAccent,
+  },
+  sharedBadgeText: { fontSize: 10, fontWeight: FontWeight.bold, color: Colors.accent, letterSpacing: 0.3 },
   rowMeta: { fontSize: FontSize.sm, color: Colors.textSecondary },
   rowChevron: { fontSize: FontSize.lg, color: Colors.textSecondary },
   fab: {

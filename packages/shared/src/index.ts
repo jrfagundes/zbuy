@@ -77,12 +77,26 @@ export interface ShoppingListSummaryDto {
   status: ShoppingListStatus;
   duplicatedFromListId: string | null;
   itemCount: number;
+  isOwner: boolean;
+  sharedByName: string | null;
+  memberCount: number;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface ShoppingListDetailDto extends ShoppingListSummaryDto {
   items: ShoppingListItemDto[];
+}
+
+export interface ShoppingListShareDto {
+  userId: string;
+  name: string;
+  email: string;
+  invitedAt: string;
+}
+
+export interface ShareListRequest {
+  email: string;
 }
 
 export interface UpsertShoppingListRequest {
@@ -369,6 +383,8 @@ export interface ShoppingJourneySummaryDto {
   knownTotal: string;
   boughtItemsWithoutPriceCount: number;
   activeStop: ShoppingJourneyStopDto | null;
+  isOwner: boolean;
+  sharedByName: string | null;
 }
 
 export interface ShoppingJourneyDetailDto extends ShoppingJourneySummaryDto {

@@ -14,19 +14,25 @@ import type {
   ProductDto,
   ShoppingListDetailDto,
   ShoppingListItemDto,
+  ShoppingListShareDto,
   UnitDto,
   UpsertShoppingListItemRequest,
 } from '@zbuy/shared';
 
+import { Button } from '@/components/ui/Button';
 import { FormSheet } from '@/components/ui/FormSheet';
+import { Input } from '@/components/ui/Input';
 import { ListItemForm } from '@/components/lists/ListItemForm';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
 import {
+  addListShare,
   addShoppingListItem,
   deleteShoppingListItem,
   getShoppingList,
+  listListShares,
   listProducts,
   listUnits,
+  removeListShare,
   updateShoppingListItem,
 } from '@/lib/resources';
 
@@ -40,6 +46,13 @@ export default function ListDetailScreen() {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<ShoppingListItemDto | null>(null);
+
+  // Sharing
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shares, setShares] = useState<ShoppingListShareDto[]>([]);
+  const [shareEmail, setShareEmail] = useState('');
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -82,6 +95,53 @@ export default function ListDetailScreen() {
     setEditing(null);
   }
 
+  async function openShare() {
+    if (!id) return;
+    setShareError(null);
+    setShareEmail('');
+    setShareOpen(true);
+    try {
+      const { shares: current } = await listListShares(id);
+      setShares(current);
+    } catch {
+      setShares([]);
+    }
+  }
+
+  async function handleAddShare() {
+    if (!id || !shareEmail.trim()) return;
+    setShareBusy(true);
+    setShareError(null);
+    try {
+      const { shares: updated } = await addListShare(id, shareEmail.trim().toLowerCase());
+      setShares(updated);
+      setShareEmail('');
+    } catch (e: unknown) {
+      setShareError(e instanceof Error ? e.message : 'Não foi possível compartilhar');
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
+  function confirmRemoveShare(member: ShoppingListShareDto) {
+    Alert.alert('Remover acesso', `Remover ${member.name} desta lista?`, [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Remover',
+        style: 'destructive',
+        onPress: async () => {
+          if (!id) return;
+          try {
+            const { shares: updated } = await removeListShare(id, member.userId);
+            setShares(updated);
+          } catch {
+            Alert.alert('Erro', 'Não foi possível remover o acesso.');
+          }
+        },
+      },
+    ]);
+  }
+
   function confirmDelete(item: ShoppingListItemDto) {
     Alert.alert('Remover item', `Remover "${item.productName}" da lista?`, [
       { text: 'Cancelar', style: 'cancel' },
@@ -119,9 +179,24 @@ export default function ListDetailScreen() {
           {list ? (
             <Text style={styles.subtitle}>
               {list.itemCount} {list.itemCount === 1 ? 'item' : 'itens'}
+              {!list.isOwner && list.sharedByName ? ` · de ${list.sharedByName}` : ''}
             </Text>
           ) : null}
         </View>
+        {list?.isOwner ? (
+          <Pressable
+            onPress={openShare}
+            hitSlop={12}
+            style={({ pressed }) => [styles.shareButton, pressed && styles.backPressed]}
+          >
+            <Text style={styles.shareIcon}>👥</Text>
+            {list.memberCount > 0 ? (
+              <View style={styles.shareCountDot}>
+                <Text style={styles.shareCountText}>{list.memberCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        ) : null}
       </View>
 
       {status === 'loading' ? (
@@ -177,6 +252,48 @@ export default function ListDetailScreen() {
           editing={editing}
           onSubmit={handleSubmit}
         />
+      </FormSheet>
+
+      {/* Share sheet */}
+      <FormSheet visible={shareOpen} title="Compartilhar lista" onClose={() => setShareOpen(false)}>
+        <Text style={styles.shareHint}>
+          Convide alguém pelo e-mail da conta ZBuy. A pessoa poderá ver e editar esta lista e
+          acompanhar a jornada de compras.
+        </Text>
+        <Input
+          label="E-MAIL"
+          value={shareEmail}
+          onChangeText={setShareEmail}
+          placeholder="pessoa@email.com"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          error={shareError ?? undefined}
+        />
+        <Button
+          label="Compartilhar"
+          onPress={handleAddShare}
+          loading={shareBusy}
+          disabled={!shareEmail.trim()}
+          style={{ marginTop: Spacing.sm }}
+        />
+
+        <Text style={styles.membersTitle}>
+          {shares.length > 0 ? 'PESSOAS COM ACESSO' : ''}
+        </Text>
+        {shares.map((member) => (
+          <View key={member.userId} style={styles.memberRow}>
+            <View style={styles.memberAvatar}>
+              <Text style={styles.memberAvatarText}>{member.name.charAt(0).toUpperCase()}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.memberName} numberOfLines={1}>{member.name}</Text>
+              <Text style={styles.memberEmail} numberOfLines={1}>{member.email}</Text>
+            </View>
+            <Pressable onPress={() => confirmRemoveShare(member)} hitSlop={8}>
+              <Text style={styles.memberRemove}>✕</Text>
+            </Pressable>
+          </View>
+        ))}
       </FormSheet>
     </SafeAreaView>
   );
@@ -237,6 +354,55 @@ const styles = StyleSheet.create({
   },
   backPressed: { opacity: 0.6 },
   backIcon: { fontSize: 26, color: Colors.text, marginTop: -3 },
+  shareButton: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceMuted,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shareIcon: { fontSize: 18 },
+  shareCountDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    minWidth: 18,
+    height: 18,
+    paddingHorizontal: 4,
+    borderRadius: 9,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareCountText: { fontSize: 10, fontWeight: FontWeight.bold, color: '#fff' },
+  shareHint: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 19, marginBottom: Spacing.base },
+  membersTitle: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.extrabold,
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  memberAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: { fontSize: FontSize.base, fontWeight: FontWeight.bold, color: Colors.accent },
+  memberName: { fontSize: FontSize.base, fontWeight: FontWeight.semibold, color: Colors.text },
+  memberEmail: { fontSize: FontSize.sm, color: Colors.textSecondary },
+  memberRemove: { fontSize: FontSize.base, color: Colors.danger, fontWeight: FontWeight.bold, paddingHorizontal: Spacing.sm },
   headerTitles: { flex: 1 },
   title: {
     fontSize: FontSize.xl,

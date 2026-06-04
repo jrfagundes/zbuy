@@ -15,7 +15,7 @@ import {
 import { type AuthUser } from "../auth/auth-response";
 import { CurrentUser } from "../auth/current-user.decorator";
 import { SessionGuard } from "../auth/session.guard";
-import { ReorderShoppingListItemsDto, UpsertShoppingListDto, UpsertShoppingListItemDto } from "./dto";
+import { ReorderShoppingListItemsDto, ShareListDto, UpsertShoppingListDto, UpsertShoppingListItemDto } from "./dto";
 import { ShoppingListsService } from "./shopping-lists.service";
 
 @Controller("shopping-lists")
@@ -84,5 +84,20 @@ export class ShoppingListsController {
   @Delete(":id/items/:itemId")
   deleteItem(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("itemId") itemId: string) {
     return this.shoppingLists.deleteItem(user.id, id, itemId);
+  }
+
+  @Get(":id/shares")
+  listShares(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.shoppingLists.listShares(user.id, id);
+  }
+
+  @Post(":id/shares")
+  addShare(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body() body: ShareListDto) {
+    return this.shoppingLists.addShare(user.id, id, body.email);
+  }
+
+  @Delete(":id/shares/:userId")
+  removeShare(@CurrentUser() user: AuthUser, @Param("id") id: string, @Param("userId") memberUserId: string) {
+    return this.shoppingLists.removeShare(user.id, id, memberUserId);
   }
 }

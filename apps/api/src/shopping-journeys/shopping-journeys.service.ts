@@ -15,6 +15,7 @@ const sourceListInclude = {
 
 const journeyInclude = {
   sourceList: true,
+  owner: { select: { name: true } },
   items: {
     include: { stopItems: true },
     orderBy: { sortOrder: "asc" as const }
@@ -105,44 +106,47 @@ export class ShoppingJourneysService {
     return this.get(ownerUserId, created.id);
   }
 
-  async getActive(ownerUserId: string) {
+  async getActive(userId: string) {
     const journey = await this.prisma.shoppingJourney.findFirst({
-      where: { ownerUserId, status: "active" },
+      where: {
+        status: "active",
+        OR: [{ ownerUserId: userId }, { sourceList: { shares: { some: { userId } } } }]
+      },
       include: journeyInclude,
       orderBy: { startedAt: "desc" }
     });
-    return journey ? this.toDetail(ownerUserId, journey as ShoppingJourneyWithRelations) : null;
+    return journey ? this.toDetail(userId, journey as ShoppingJourneyWithRelations) : null;
   }
 
-  async get(ownerUserId: string, id: string) {
-    const journey = await this.findOwnedJourney(ownerUserId, id);
-    return this.toDetail(ownerUserId, journey);
+  async get(userId: string, id: string) {
+    const journey = await this.findAccessibleJourney(userId, id);
+    return this.toDetail(userId, journey);
   }
 
-  async finishStop(ownerUserId: string, journeyId: string, stopId: string) {
-    await this.findOwnedActiveJourney(ownerUserId, journeyId);
+  async finishStop(userId: string, journeyId: string, stopId: string) {
+    await this.findAccessibleActiveJourney(userId, journeyId);
     await this.findOwnedActiveStop(journeyId, stopId);
     await this.prisma.shoppingJourneyStop.update({
       where: { id: stopId },
       data: { status: "finished", finishedAt: new Date() }
     });
-    return this.get(ownerUserId, journeyId);
+    return this.get(userId, journeyId);
   }
 
-  async continueOutsideRadius(ownerUserId: string, journeyId: string, stopId: string) {
-    await this.findOwnedActiveJourney(ownerUserId, journeyId);
+  async continueOutsideRadius(userId: string, journeyId: string, stopId: string) {
+    await this.findAccessibleActiveJourney(userId, journeyId);
     await this.findOwnedActiveStop(journeyId, stopId);
     await this.prisma.shoppingJourneyStop.update({
       where: { id: stopId },
       data: { continuedOutsideRadiusAt: new Date() }
     });
-    return this.get(ownerUserId, journeyId);
+    return this.get(userId, journeyId);
   }
 
-  async switchSupermarket(ownerUserId: string, journeyId: string, stopId: string, dto: StartJourneyStopDto) {
-    await this.findOwnedActiveJourney(ownerUserId, journeyId);
+  async switchSupermarket(userId: string, journeyId: string, stopId: string, dto: StartJourneyStopDto) {
+    await this.findAccessibleActiveJourney(userId, journeyId);
     await this.findOwnedSwitchableStop(journeyId, stopId);
-    await this.supermarkets.findOwnedActive(ownerUserId, dto.supermarketId);
+    await this.supermarkets.findOwnedActive(userId, dto.supermarketId);
 
     await this.prisma.shoppingJourneyStop.update({
       where: { id: stopId },
@@ -158,17 +162,17 @@ export class ShoppingJourneysService {
     await this.prisma.shoppingJourneyStopItem.createMany({
       data: activeItems.map((item) => ({ stopId: newStop.id, journeyItemId: item.id, status: "pending" as const }))
     });
-    return this.get(ownerUserId, journeyId);
+    return this.get(userId, journeyId);
   }
 
   async updateStopItem(
-    ownerUserId: string,
+    userId: string,
     journeyId: string,
     stopId: string,
     itemId: string,
     dto: UpdateShoppingJourneyStopItemDto
   ) {
-    const journey = await this.findOwnedActiveJourney(ownerUserId, journeyId);
+    const journey = await this.findAccessibleActiveJourney(userId, journeyId);
     const stop = await this.findOwnedActiveStop(journeyId, stopId);
     const stopItem = await this.prisma.shoppingJourneyStopItem.findFirst({ where: { id: itemId, stopId } });
     if (!stopItem) {
@@ -208,13 +212,13 @@ export class ShoppingJourneysService {
     });
 
     if (dto.corridorId && journeyItem.sourceProductId) {
-      await this.layouts.setProductPlacement(ownerUserId, stop.supermarketId, journeyItem.sourceProductId, {
+      await this.layouts.setProductPlacement(userId, stop.supermarketId, journeyItem.sourceProductId, {
         corridorId: dto.corridorId
       });
     }
 
     await this.recalculateTotals(journeyId);
-    return this.get(ownerUserId, journeyId);
+    return this.get(userId, journeyId);
   }
 
   async complete(ownerUserId: string, journeyId: string) {
@@ -278,6 +282,35 @@ export class ShoppingJourneysService {
     return journey;
   }
 
+  /** Owner OR member of any of the journey's source lists. */
+  private async findAccessibleJourney(userId: string, id: string) {
+    const journey = await this.prisma.shoppingJourney.findFirst({ where: { id }, include: journeyInclude });
+    if (!journey) {
+      throw new NotFoundException("Shopping journey not found");
+    }
+    if (journey.ownerUserId !== userId) {
+      const sourceListIds = new Set<string>([journey.sourceListId]);
+      for (const item of journey.items ?? []) {
+        if (item.sourceListId) sourceListIds.add(item.sourceListId);
+      }
+      const share = await this.prisma.shoppingListShare.findFirst({
+        where: { userId, listId: { in: Array.from(sourceListIds) } }
+      });
+      if (!share) {
+        throw new NotFoundException("Shopping journey not found");
+      }
+    }
+    return journey as ShoppingJourneyWithRelations;
+  }
+
+  private async findAccessibleActiveJourney(userId: string, id: string) {
+    const journey = await this.findAccessibleJourney(userId, id);
+    if (journey.status !== "active") {
+      throw new BadRequestException("Shopping journey is not active");
+    }
+    return journey;
+  }
+
   private async findOwnedActiveStop(journeyId: string, stopId: string) {
     const stop = await this.prisma.shoppingJourneyStop.findFirst({ where: { id: stopId, journeyId, status: "active" } });
     if (!stop) {
@@ -294,7 +327,7 @@ export class ShoppingJourneysService {
     return stop;
   }
 
-  private async toDetail(ownerUserId: string, journey: ShoppingJourneyWithRelations) {
+  private async toDetail(actingUserId: string, journey: ShoppingJourneyWithRelations) {
     const productIds = (journey.items ?? [])
       .map((item) => item.sourceProductId)
       .filter((productId): productId is string => productId !== null);
@@ -302,11 +335,11 @@ export class ShoppingJourneysService {
     const placements =
       activeStop && productIds.length > 0
         ? await this.prisma.privateProductPlacement.findMany({
-            where: { ownerUserId, supermarketId: activeStop.supermarketId, productId: { in: productIds } },
+            where: { ownerUserId: actingUserId, supermarketId: activeStop.supermarketId, productId: { in: productIds } },
             include: { corridor: true }
           })
         : [];
-    return toShoppingJourneyDetailDto(journey, placements);
+    return toShoppingJourneyDetailDto(journey, placements, actingUserId);
   }
 
   private async recalculateTotals(journeyId: string) {

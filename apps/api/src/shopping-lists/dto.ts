@@ -1,4 +1,10 @@
-import { ArrayMinSize, IsArray, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from "class-validator";
+import { ArrayMinSize, IsArray, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, MaxLength } from "class-validator";
+
+export class ShareListDto {
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+}
 
 export class UpsertShoppingListDto {
   @IsString()

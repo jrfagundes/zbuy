@@ -112,6 +112,8 @@ model User {
   privateProductPlacements          PrivateProductPlacement[]
   layoutContributionConsent         LayoutContributionConsent?
   supermarketLayoutConsentOverrides SupermarketLayoutConsentOverride[]
+  listSharesReceived                ShoppingListShare[]                @relation("SharedWithUser")
+  listSharesSent                    ShoppingListShare[]                @relation("SharedByUser")
 }
 
 model AuthIdentity {
@@ -223,9 +225,24 @@ model ShoppingList {
   items                ShoppingListItem[]
   shoppingSessions     ShoppingSession[]
   shoppingJourneys     ShoppingJourney[]
+  shares               ShoppingListShare[]
 
   @@index([ownerUserId, status])
   @@index([ownerUserId, name])
+}
+
+model ShoppingListShare {
+  id              String       @id @default(uuid())
+  listId          String
+  userId          String
+  invitedByUserId String
+  createdAt       DateTime     @default(now())
+  list            ShoppingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user            User         @relation("SharedWithUser", fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy       User         @relation("SharedByUser", fields: [invitedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([userId])
 }
 
 model ShoppingListItem {

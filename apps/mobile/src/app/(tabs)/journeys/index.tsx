@@ -197,6 +197,9 @@ export default function JourneysScreen() {
             <Text style={styles.activeListName}>
               {activeJourney.sourceLists.map((l) => l.name).join(', ')}
             </Text>
+            {!activeJourney.isOwner && activeJourney.sharedByName ? (
+              <Text style={styles.sharedLabel}>👥 Compartilhada por {activeJourney.sharedByName}</Text>
+            ) : null}
 
             {/* Progress bar */}
             <View style={styles.progressTrack}>
@@ -372,6 +375,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: FontWeight.bold,
     color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  sharedLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.accent,
+    fontWeight: FontWeight.semibold,
     marginBottom: Spacing.base,
   },
   progressTrack: {

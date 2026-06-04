@@ -260,7 +260,7 @@ export class ShoppingSessionsService {
       include: continuationListInclude
     });
 
-    return toShoppingListDetailDto(list);
+    return toShoppingListDetailDto(list, ownerUserId);
   }
 
   private async findOwnedSession(ownerUserId: string, id: string): Promise<ShoppingSessionWithRelations> {

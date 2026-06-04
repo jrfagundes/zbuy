@@ -1,11 +1,23 @@
 import type { Product, ShoppingList, ShoppingListItem, Unit } from "@prisma/client";
-import type { ShoppingListDetailDto, ShoppingListItemDto, ShoppingListSummaryDto } from "@zbuy/shared";
+import type {
+  ShoppingListDetailDto,
+  ShoppingListItemDto,
+  ShoppingListShareDto,
+  ShoppingListSummaryDto
+} from "@zbuy/shared";
 import { toUnitDto } from "../units/unit-response";
 
 type ItemWithRelations = ShoppingListItem & { product: Product; unit: Unit };
 type ListWithRelations = ShoppingList & {
   items?: ItemWithRelations[];
-  _count?: { items: number };
+  owner?: { name: string } | null;
+  _count?: { items?: number; shares?: number };
+};
+
+type ShareWithUser = {
+  userId: string;
+  createdAt: Date;
+  user: { name: string; email: string };
 };
 
 function decimalToString(value: { toString(): string } | string | number) {
@@ -32,7 +44,8 @@ export function toShoppingListItemDto(item: ItemWithRelations): ShoppingListItem
   };
 }
 
-export function toShoppingListSummaryDto(list: ListWithRelations): ShoppingListSummaryDto {
+export function toShoppingListSummaryDto(list: ListWithRelations, actingUserId: string): ShoppingListSummaryDto {
+  const isOwner = list.ownerUserId === actingUserId;
   return {
     id: list.id,
     name: list.name,
@@ -40,14 +53,26 @@ export function toShoppingListSummaryDto(list: ListWithRelations): ShoppingListS
     status: list.status,
     duplicatedFromListId: list.duplicatedFromListId,
     itemCount: list._count?.items ?? list.items?.length ?? 0,
+    isOwner,
+    sharedByName: isOwner ? null : list.owner?.name ?? null,
+    memberCount: list._count?.shares ?? 0,
     createdAt: list.createdAt.toISOString(),
     updatedAt: list.updatedAt.toISOString()
   };
 }
 
-export function toShoppingListDetailDto(list: ListWithRelations): ShoppingListDetailDto {
+export function toShoppingListDetailDto(list: ListWithRelations, actingUserId: string): ShoppingListDetailDto {
   return {
-    ...toShoppingListSummaryDto(list),
+    ...toShoppingListSummaryDto(list, actingUserId),
     items: (list.items ?? []).map(toShoppingListItemDto)
+  };
+}
+
+export function toShoppingListShareDto(share: ShareWithUser): ShoppingListShareDto {
+  return {
+    userId: share.userId,
+    name: share.user.name,
+    email: share.user.email,
+    invitedAt: share.createdAt.toISOString()
   };
 }

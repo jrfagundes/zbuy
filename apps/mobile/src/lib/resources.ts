@@ -4,6 +4,7 @@ import type {
   ShoppingJourneyDetailDto,
   ShoppingJourneyHistoryStopDto,
   ShoppingListDetailDto,
+  ShoppingListShareDto,
   ShoppingListSummaryDto,
   StartShoppingJourneyRequest,
   SupermarketDto,
@@ -161,6 +162,25 @@ export function updateShoppingListItem(
 
 export function deleteShoppingListItem(listId: string, itemId: string) {
   return apiRequest<ShoppingListDetailDto>(`/shopping-lists/${listId}/items/${itemId}`, {
+    method: 'DELETE',
+  });
+}
+
+// Shopping List Sharing
+
+export function listListShares(listId: string) {
+  return apiRequest<{ shares: ShoppingListShareDto[] }>(`/shopping-lists/${listId}/shares`);
+}
+
+export function addListShare(listId: string, email: string) {
+  return apiRequest<{ shares: ShoppingListShareDto[] }>(`/shopping-lists/${listId}/shares`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function removeListShare(listId: string, userId: string) {
+  return apiRequest<{ shares: ShoppingListShareDto[] }>(`/shopping-lists/${listId}/shares/${userId}`, {
     method: 'DELETE',
   });
 }

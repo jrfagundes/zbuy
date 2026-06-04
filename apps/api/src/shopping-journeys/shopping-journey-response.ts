@@ -10,6 +10,7 @@ type DecimalLike = { toString(): string };
 
 export type ShoppingJourneyWithRelations = {
   id: string;
+  ownerUserId: string;
   sourceListId: string;
   snapshotSourceListName: string;
   context: "physical" | "online";
@@ -19,6 +20,7 @@ export type ShoppingJourneyWithRelations = {
   canceledAt: Date | null;
   knownTotal: DecimalLike | string | number;
   boughtItemsWithoutPriceCount: number;
+  owner?: { name: string } | null;
   items?: JourneyItemWithStops[];
   stops?: JourneyStopWithRelations[];
 };
@@ -67,18 +69,23 @@ type JourneyStopItemRecord = {
 
 export function toShoppingJourneyDetailDto(
   journey: ShoppingJourneyWithRelations,
-  placements: Array<{ productId: string; corridorId: string; corridor?: { name: string } }> = []
+  placements: Array<{ productId: string; corridorId: string; corridor?: { name: string } }> = [],
+  actingUserId?: string
 ): ShoppingJourneyDetailDto {
   const activeStop = findActiveStop(journey);
   return {
-    ...toShoppingJourneySummaryDto(journey),
+    ...toShoppingJourneySummaryDto(journey, actingUserId),
     items: (journey.items ?? []).map((item) => toShoppingJourneyItemDto(item, activeStop?.id ?? null, placements)),
     layout: null
   };
 }
 
-export function toShoppingJourneySummaryDto(journey: ShoppingJourneyWithRelations): ShoppingJourneySummaryDto {
+export function toShoppingJourneySummaryDto(
+  journey: ShoppingJourneyWithRelations,
+  actingUserId?: string
+): ShoppingJourneySummaryDto {
   const sourceLists = deriveSourceLists(journey);
+  const isOwner = actingUserId === undefined || journey.ownerUserId === actingUserId;
   return {
     id: journey.id,
     sourceListId: journey.sourceListId,
@@ -91,7 +98,9 @@ export function toShoppingJourneySummaryDto(journey: ShoppingJourneyWithRelation
     canceledAt: journey.canceledAt?.toISOString() ?? null,
     knownTotal: decimalToString(journey.knownTotal),
     boughtItemsWithoutPriceCount: journey.boughtItemsWithoutPriceCount,
-    activeStop: findActiveStop(journey)
+    activeStop: findActiveStop(journey),
+    isOwner,
+    sharedByName: isOwner ? null : journey.owner?.name ?? null
   };
 }
 
