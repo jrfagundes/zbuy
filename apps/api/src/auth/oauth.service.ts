@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { addDays } from "date-fns";
 import { OAuth2Client } from "google-auth-library";
+import { CatalogService } from "../catalog/catalog.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { TokenService } from "./token.service";
 
@@ -26,7 +27,8 @@ export class OAuthService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly tokens: TokenService
+    private readonly tokens: TokenService,
+    private readonly catalog: CatalogService
   ) {}
 
   /**
@@ -87,6 +89,7 @@ export class OAuthService {
     });
 
     let user = existingIdentity?.user ?? null;
+    let isNewUser = false;
 
     if (!user) {
       user = await this.prisma.user.findUnique({ where: { email: providerEmail } });
@@ -113,7 +116,13 @@ export class OAuthService {
             }
           }
         });
+        isNewUser = true;
       }
+    }
+
+    // Seed brand-new accounts with the known-products catalog.
+    if (isNewUser) {
+      await this.catalog.provisionForUser(user.id);
     }
 
     const sessionToken = this.tokens.createOpaqueToken();

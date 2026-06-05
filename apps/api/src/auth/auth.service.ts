@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { addDays, addMinutes } from "date-fns";
+import { CatalogService } from "../catalog/catalog.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { PasswordService } from "./password.service";
 import { TokenService } from "./token.service";
@@ -22,7 +23,8 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly passwords: PasswordService,
-    private readonly tokens: TokenService
+    private readonly tokens: TokenService,
+    private readonly catalog: CatalogService
   ) {}
 
   async signUp(input: SignUpInput) {
@@ -61,6 +63,9 @@ export class AuthService {
         }
       }
     });
+
+    // Seed the new account with the known-products catalog.
+    await this.catalog.provisionForUser(user.id);
 
     return { user, sessionToken };
   }
