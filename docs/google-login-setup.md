@@ -38,13 +38,16 @@ O **Android** OAuth Client não vira variável — ele só precisa existir no Go
 ### 3. Android OAuth Client (Google Sign-In nativo)
 1. **Criar credenciais → ID do cliente OAuth → Android**.
 2. **Nome do pacote**: `dev.zbuy.app`
-3. **Impressão digital SHA-1**: obtenha do keystore de debug:
+3. **Impressão digital SHA-1**: obtenha do keystore que **assina o build** —
+   `android/app/debug.keystore` (gerado pelo `expo prebuild`), **não** o
+   `~/.android/debug.keystore` (eles diferem!):
 
    ```powershell
-   keytool -list -v -keystore "$env:USERPROFILE\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+   keytool -list -v -keystore "apps\mobile\android\app\debug.keystore" -alias androiddebugkey -storepass android -keypass android
    ```
 
    Copie a linha `SHA1:` e cole no campo do Google Cloud.
+   > Se o `android/` ainda não existe, rode `cd apps/mobile; npx expo prebuild --platform android` antes.
    > Para builds de release (EAS/Play Store), repita com o keystore de produção e o SHA-1
    > do Play App Signing.
 
