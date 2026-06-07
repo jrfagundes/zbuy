@@ -1,0 +1,36 @@
+# Build context exclusions for the API image.
+# Keep this lean so the Docker build is fast and reproducible.
+
+# Dependencies / build outputs (reinstalled & rebuilt inside the image)
+**/node_modules
+**/dist
+**/.next
+**/*.tsbuildinfo
+.pnpm-store
+
+# Mobile native build output (irrelevante para a API)
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+
+# Secrets / env (defina como env vars no Render)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.local
+client_secret_*.json
+
+# Local tooling / VCS
+.git
+.github
+.claude
+.superpowers
+.worktrees
+.codex-logs
+test-results
+playwright-report
+
+# Docs e composições locais que não entram na imagem
+docs
+docker-compose.yml

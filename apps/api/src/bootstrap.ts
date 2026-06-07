@@ -13,6 +13,7 @@ export async function bootstrap() {
     origin: allowedOrigins,
     credentials: true
   });
-  const port = Number(process.env.API_PORT ?? 3001);
-  await app.listen(port);
+  // Render (and most PaaS) inject the port to bind on via $PORT.
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+  await app.listen(port, "0.0.0.0");
 }

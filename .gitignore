@@ -16,6 +16,9 @@ playwright-report/
 apps/*/.env
 apps/*/.env.local
 
+# Google OAuth client secret (baixado do Google Cloud — nunca commitar)
+client_secret_*.json
+
 # Expo / React Native native build output
 apps/mobile/android/
 apps/mobile/ios/

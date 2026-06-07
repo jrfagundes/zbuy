@@ -1,0 +1,39 @@
+# Render Blueprint — backend ZBuy (@zbuy/api)
+# Banco de dados: usamos Neon (Postgres free, fora do Render).
+#
+# Como usar:
+#   1. Conecte o repo no Render (New > Blueprint) — ele lê este arquivo.
+#   2. Preencha as variáveis marcadas como `sync: false` no painel.
+#
+# O plano free "dorme" após ~15 min ocioso (cold start ~50s na 1ª chamada).
+
+services:
+  - type: web
+    name: zbuy-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: oregon
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Connection string do Neon (inclua ?sslmode=require). Defina no painel.
+      - key: DATABASE_URL
+        sync: false
+      # Segredo de sessão — o Render gera um valor forte automaticamente.
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: SESSION_COOKIE_NAME
+        value: zbuy_session
+      # Web Client ID do Google (mesmo do app). Defina no painel.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Origens permitidas para CORS (app web). O app mobile não usa CORS.
+      - key: WEB_ORIGIN
+        value: http://localhost:3000
+      # Base usada nos links de reset de senha (ajuste quando tiver web público).
+      - key: PASSWORD_RESET_BASE_URL
+        value: http://localhost:3000/reset-password
