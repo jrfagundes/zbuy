@@ -1,5 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import type {
   ProductDto,
   ShoppingListItemDto,
@@ -10,22 +17,35 @@ import type {
 import { Button } from '@/components/ui/Button';
 import { ChipSelect } from '@/components/ui/ChipSelect';
 import { Input } from '@/components/ui/Input';
+import { createProduct, listProducts } from '@/lib/resources';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
 
+type Scope = 'all' | 'mine';
+
+// Quantos resultados renderizar de uma vez (o catálogo tem milhares de itens).
+const RESULT_LIMIT = 50;
+
 interface ListItemFormProps {
-  products: ProductDto[];
   units: UnitDto[];
   editing: ShoppingListItemDto | null;
   onSubmit: (input: UpsertShoppingListItemRequest) => Promise<void>;
 }
 
-export function ListItemForm({ products, units, editing, onSubmit }: ListItemFormProps) {
+export function ListItemForm({ units, editing, onSubmit }: ListItemFormProps) {
   const [productId, setProductId] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<ProductDto | null>(null);
   const [quantity, setQuantity] = useState('1');
   const [unitId, setUnitId] = useState('');
   const [expectedPrice, setExpectedPrice] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Busca de produtos (ao vivo, direto na API — sempre fresca e com escopo).
+  const [query, setQuery] = useState('');
+  const [scope, setScope] = useState<Scope>('all');
+  const [results, setResults] = useState<ProductDto[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -35,23 +55,77 @@ export function ListItemForm({ products, units, editing, onSubmit }: ListItemFor
       setExpectedPrice(editing.expectedPrice ?? '');
     } else {
       setProductId('');
+      setSelectedProduct(null);
       setQuantity('1');
       setUnitId('');
       setExpectedPrice('');
+      setQuery('');
+      setScope('all');
     }
   }, [editing]);
 
-  // When a product is picked, default the unit to its default unit
-  function pickProduct(id: string) {
-    setProductId(id);
-    const product = products.find((p) => p.id === id);
-    if (product && !editing) {
-      setUnitId(product.defaultUnitId);
+  // Busca com debounce, refazendo a cada digitação ou troca de escopo.
+  useEffect(() => {
+    if (editing) return;
+    let cancelled = false;
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        const { products } = await listProducts(query, scope);
+        if (!cancelled) setResults(products);
+      } catch {
+        if (!cancelled) setResults([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [query, scope, editing]);
+
+  function pickProduct(product: ProductDto) {
+    setProductId(product.id);
+    setSelectedProduct(product);
+    if (!editing) setUnitId(product.defaultUnitId);
+  }
+
+  // Unidade padrão para o cadastro rápido: a já escolhida, senão "unit".
+  function resolveDefaultUnitId(): string {
+    if (unitId) return unitId;
+    const unit = units.find((u) => u.abbreviation === 'unit');
+    return unit?.id ?? units[0]?.id ?? '';
+  }
+
+  async function handleQuickCreate() {
+    const name = query.trim();
+    const defaultUnitId = resolveDefaultUnitId();
+    if (!name || !defaultUnitId || creating) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const created = await createProduct({
+        name,
+        categoryLabel: 'Geral',
+        defaultUnitId,
+      });
+      pickProduct(created);
+      setQuery('');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Não foi possível cadastrar o produto');
+    } finally {
+      setCreating(false);
     }
   }
 
   const isValid =
     productId.length > 0 && unitId.length > 0 && quantity.trim().length > 0;
+
+  const visibleResults = results.slice(0, RESULT_LIMIT);
+  const hiddenCount = results.length - visibleResults.length;
+  const trimmedQuery = query.trim();
+  const showQuickCreate = !searching && trimmedQuery.length > 0 && results.length === 0;
 
   async function handleSubmit() {
     if (!isValid || saving) return;
@@ -82,18 +156,94 @@ export function ListItemForm({ products, units, editing, onSubmit }: ListItemFor
       ) : (
         <View>
           <Text style={styles.label}>PRODUTO</Text>
-          {products.length === 0 ? (
+
+          {/* Produto selecionado */}
+          {selectedProduct ? (
+            <View style={styles.selectedBanner}>
+              <Text style={styles.selectedCheck}>✓</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.selectedName} numberOfLines={1}>
+                  {selectedProduct.name}
+                </Text>
+                <Text style={styles.selectedMeta} numberOfLines={1}>
+                  {selectedProduct.brand ? `${selectedProduct.brand} · ` : ''}
+                  {selectedProduct.categoryLabel}
+                </Text>
+              </View>
+            </View>
+          ) : null}
+
+          {/* Toggle Todos / Meus produtos */}
+          <View style={styles.segment}>
+            <Pressable
+              style={[styles.segmentBtn, scope === 'all' && styles.segmentBtnActive]}
+              onPress={() => setScope('all')}
+            >
+              <Text
+                style={[styles.segmentText, scope === 'all' && styles.segmentTextActive]}
+              >
+                Todos
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.segmentBtn, scope === 'mine' && styles.segmentBtnActive]}
+              onPress={() => setScope('mine')}
+            >
+              <Text
+                style={[styles.segmentText, scope === 'mine' && styles.segmentTextActive]}
+              >
+                Meus produtos
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Campo de busca */}
+          <Input
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Buscar produto por nome, marca ou código…"
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            style={styles.searchInput}
+          />
+
+          {searching ? (
+            <View style={styles.searchingRow}>
+              <ActivityIndicator size="small" color={Colors.accent} />
+              <Text style={styles.searchingText}>Buscando…</Text>
+            </View>
+          ) : showQuickCreate ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.empty}>
+                Nenhum produto encontrado para “{trimmedQuery}”.
+              </Text>
+              <Button
+                label={`+ Cadastrar “${trimmedQuery}”`}
+                onPress={handleQuickCreate}
+                loading={creating}
+                variant="secondary"
+                fullWidth
+              />
+            </View>
+          ) : results.length === 0 ? (
             <Text style={styles.empty}>
-              Cadastre produtos primeiro na aba Produtos.
+              {scope === 'mine'
+                ? 'Você ainda não cadastrou produtos. Digite um nome acima para criar.'
+                : 'Nenhum produto disponível.'}
             </Text>
           ) : (
-            <ScrollView style={styles.productList} nestedScrollEnabled>
-              {products.map((p) => {
+            <ScrollView
+              style={styles.productList}
+              nestedScrollEnabled
+              keyboardShouldPersistTaps="handled"
+            >
+              {visibleResults.map((p) => {
                 const selected = p.id === productId;
                 return (
                   <Pressable
                     key={p.id}
-                    onPress={() => pickProduct(p.id)}
+                    onPress={() => pickProduct(p)}
                     style={({ pressed }) => [
                       styles.productOption,
                       selected && styles.productOptionSelected,
@@ -110,11 +260,18 @@ export function ListItemForm({ products, units, editing, onSubmit }: ListItemFor
                       {p.name}
                     </Text>
                     <Text style={styles.productCategory} numberOfLines={1}>
+                      {p.brand ? `${p.brand} · ` : ''}
                       {p.categoryLabel}
                     </Text>
                   </Pressable>
                 );
               })}
+              {hiddenCount > 0 ? (
+                <Text style={styles.moreHint}>
+                  +{hiddenCount} resultado{hiddenCount > 1 ? 's' : ''} — refine a busca
+                  para ver mais
+                </Text>
+              ) : null}
             </ScrollView>
           )}
         </View>
@@ -173,17 +330,92 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontStyle: 'italic',
   },
+  emptyBox: {
+    gap: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
   editingProduct: {
     fontSize: FontSize.base,
     fontWeight: FontWeight.semibold,
     color: Colors.text,
   },
+
+  // Produto selecionado
+  selectedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: `${Colors.accent}22`,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.accent,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  selectedCheck: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.bold,
+    color: Colors.accent,
+  },
+  selectedName: {
+    fontSize: FontSize.base,
+    fontWeight: FontWeight.semibold,
+    color: Colors.text,
+  },
+  selectedMeta: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+
+  // Toggle de escopo
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceInput,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 3,
+    gap: 3,
+    marginBottom: Spacing.sm,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentBtnActive: { backgroundColor: Colors.accent },
+  segmentText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semibold,
+    color: Colors.textSecondary,
+  },
+  segmentTextActive: { color: '#ffffff' },
+
+  searchInput: { marginBottom: Spacing.sm },
+  searchingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+  },
+  searchingText: { fontSize: FontSize.sm, color: Colors.textSecondary },
+
   productList: {
-    maxHeight: 180,
+    maxHeight: 220,
     borderRadius: Radius.md,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surfaceInput,
+  },
+  moreHint: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: Spacing.sm,
   },
   productOption: {
     paddingHorizontal: Spacing.base,

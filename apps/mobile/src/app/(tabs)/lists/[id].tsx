@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type {
-  ProductDto,
   ShoppingListDetailDto,
   ShoppingListItemDto,
   ShoppingListShareDto,
@@ -30,7 +29,6 @@ import {
   deleteShoppingListItem,
   getShoppingList,
   listListShares,
-  listProducts,
   listUnits,
   removeListShare,
   updateShoppingListItem,
@@ -41,7 +39,6 @@ export default function ListDetailScreen() {
   const router = useRouter();
 
   const [list, setList] = useState<ShoppingListDetailDto | null>(null);
-  const [products, setProducts] = useState<ProductDto[]>([]);
   const [units, setUnits] = useState<UnitDto[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -57,13 +54,11 @@ export default function ListDetailScreen() {
   const load = useCallback(async () => {
     if (!id) return;
     try {
-      const [listDetail, productsRes, unitsRes] = await Promise.all([
+      const [listDetail, unitsRes] = await Promise.all([
         getShoppingList(id),
-        listProducts(),
         listUnits(),
       ]);
       setList(listDetail);
-      setProducts(productsRes.products);
       setUnits(unitsRes.units);
       setStatus('ready');
     } catch {
@@ -246,12 +241,7 @@ export default function ListDetailScreen() {
           setEditing(null);
         }}
       >
-        <ListItemForm
-          products={products}
-          units={units}
-          editing={editing}
-          onSubmit={handleSubmit}
-        />
+        <ListItemForm units={units} editing={editing} onSubmit={handleSubmit} />
       </FormSheet>
 
       {/* Share sheet */}
