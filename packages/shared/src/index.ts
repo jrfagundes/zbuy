@@ -95,6 +95,15 @@ export interface ShoppingListShareDto {
   invitedAt: string;
 }
 
+export interface ListSharesResponse {
+  shares: ShoppingListShareDto[];
+  /**
+   * Presente quando o e-mail informado ainda não tem conta no sistema:
+   * em vez de compartilhar, enviamos um convite de cadastro para esse e-mail.
+   */
+  invited?: { email: string };
+}
+
 export interface ShareListRequest {
   email: string;
 }

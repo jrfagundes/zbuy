@@ -108,9 +108,15 @@ export default function ListDetailScreen() {
     setShareBusy(true);
     setShareError(null);
     try {
-      const { shares: updated } = await addListShare(id, shareEmail.trim().toLowerCase());
-      setShares(updated);
+      const result = await addListShare(id, shareEmail.trim().toLowerCase());
+      setShares(result.shares);
       setShareEmail('');
+      if (result.invited) {
+        Alert.alert(
+          'Convite enviado ✉️',
+          `${result.invited.email} ainda não tem conta no ZBuy. Enviamos um e-mail convidando a pessoa a baixar o app e se cadastrar. Depois disso, compartilhe a lista novamente.`,
+        );
+      }
     } catch (e: unknown) {
       setShareError(e instanceof Error ? e.message : 'Não foi possível compartilhar');
     } finally {

@@ -37,3 +37,11 @@ services:
       # Base usada nos links de reset de senha (ajuste quando tiver web público).
       - key: PASSWORD_RESET_BASE_URL
         value: http://localhost:3000/reset-password
+      # Envio de e-mail (convite de lista). Gmail SMTP: SMTP_PASS = "Senha de app".
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      # Link público do APK usado no convite (GitHub Release). Futuro: Play Store.
+      - key: APK_DOWNLOAD_URL
+        value: https://github.com/jrfagundes/zbuy/releases/download/v1.0.0/zbuy.apk

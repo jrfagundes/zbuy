@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReorderShoppingListItemsDto, UpsertShoppingListDto, UpsertShoppingListItemDto } from "./dto";
 import { toShoppingListDetailDto, toShoppingListShareDto, toShoppingListSummaryDto } from "./shopping-list-response";
@@ -14,7 +15,10 @@ const listDetailInclude = {
 
 @Injectable()
 export class ShoppingListsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mail: MailService
+  ) {}
 
   async list(userId: string, includeArchived = false) {
     const shoppingLists = await this.prisma.shoppingList.findMany({
@@ -180,12 +184,21 @@ export class ShoppingListsService {
   }
 
   async addShare(ownerUserId: string, listId: string, email: string) {
-    await this.findOwnedList(ownerUserId, listId);
+    const list = await this.findOwnedList(ownerUserId, listId);
     const normalizedEmail = email.trim().toLowerCase();
     const target = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+    // E-mail ainda sem conta: em vez de compartilhar, enviamos um convite de cadastro.
     if (!target) {
-      throw new NotFoundException("User not found for the given e-mail");
+      const inviter = await this.prisma.user.findUnique({
+        where: { id: ownerUserId },
+        select: { name: true }
+      });
+      await this.mail.sendListInvite(normalizedEmail, inviter?.name ?? "Alguém", list.name);
+      const { shares } = await this.listShares(ownerUserId, listId);
+      return { shares, invited: { email: normalizedEmail } };
     }
+
     if (target.id === ownerUserId) {
       throw new BadRequestException("You cannot share a list with yourself");
     }

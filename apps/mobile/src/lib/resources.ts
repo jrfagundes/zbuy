@@ -1,5 +1,6 @@
 import type {
   LayoutContributionConsentDto,
+  ListSharesResponse,
   ProductDto,
   ShoppingJourneyDetailDto,
   ShoppingJourneyHistoryStopDto,
@@ -180,7 +181,7 @@ export function listListShares(listId: string) {
 }
 
 export function addListShare(listId: string, email: string) {
-  return apiRequest<{ shares: ShoppingListShareDto[] }>(`/shopping-lists/${listId}/shares`, {
+  return apiRequest<ListSharesResponse>(`/shopping-lists/${listId}/shares`, {
     method: 'POST',
     body: JSON.stringify({ email }),
   });
