@@ -19,10 +19,11 @@ export class MailService {
       this.logger.warn("SMTP não configurado (SMTP_USER/SMTP_PASS) — envio de e-mail desativado");
       return null;
     }
+    const port = Number(process.env.SMTP_PORT ?? 587);
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST ?? "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT ?? 465),
-      secure: true,
+      host: process.env.SMTP_HOST ?? "smtp.resend.com",
+      port,
+      secure: port === 465, // 465 = SSL direto; 587 = STARTTLS (padrão dos provedores)
       auth: { user, pass }
     });
     return this.transporter;
