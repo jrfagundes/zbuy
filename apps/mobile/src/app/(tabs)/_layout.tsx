@@ -4,6 +4,7 @@ import { StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, FontSize, FontWeight } from '@/constants/theme';
+import { FEATURES } from '@/constants/features';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
@@ -38,6 +39,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="journeys"
         options={{
+          href: FEATURES.journeys ? undefined : null,
           title: 'Compras',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🛒" focused={focused} />,
         }}
@@ -59,6 +61,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="history"
         options={{
+          href: FEATURES.history ? undefined : null,
           title: 'Histórico',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🕐" focused={focused} />,
         }}

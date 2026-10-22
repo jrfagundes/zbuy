@@ -23,6 +23,7 @@ import { FormSheet } from '@/components/ui/FormSheet';
 import { Input } from '@/components/ui/Input';
 import { ListItemForm } from '@/components/lists/ListItemForm';
 import { Colors, FontSize, FontWeight, Radius, Shadow, Spacing } from '@/constants/theme';
+import { FEATURES } from '@/constants/features';
 import {
   addListShare,
   addShoppingListItem,
@@ -184,7 +185,7 @@ export default function ListDetailScreen() {
             </Text>
           ) : null}
         </View>
-        {list?.isOwner ? (
+        {list?.isOwner && FEATURES.sharing ? (
           <Pressable
             onPress={openShare}
             hitSlop={12}

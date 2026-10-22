@@ -2,7 +2,10 @@ import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { clearSessionCookie, getSessionCookie } from '@/lib/api';
+import { OFFLINE } from '@/constants/features';
 import { AuthUser, logout as apiLogout } from '@/lib/resources';
+
+const OFFLINE_USER: AuthUser = { id: 'local-user', name: 'Você', email: 'offline@zbuy.app' };
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -23,15 +26,17 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(OFFLINE ? OFFLINE_USER : null);
+  const [isLoading, setIsLoading] = useState(!OFFLINE);
   const router = useRouter();
   const segments = useSegments();
 
   // On mount: the backend has no session-restore endpoint, so we can't
   // rehydrate the user object from the persisted cookie. Start logged out
   // and clear any stale cookie so the user lands on the login screen.
+  // Em modo OFFLINE não há login: entramos direto como usuário local.
   useEffect(() => {
+    if (OFFLINE) return;
     getSessionCookie()
       .then((cookie) => {
         if (cookie) {

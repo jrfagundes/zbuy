@@ -17,6 +17,7 @@ import type { LayoutContributionConsentDto } from '@zbuy/shared';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { FEATURES, OFFLINE } from '@/constants/features';
 import { useAuth } from '@/context/auth';
 import {
   AuthUser,
@@ -165,10 +166,16 @@ export default function AccountScreen() {
           <MenuRow icon="📋" label="Listas" onPress={() => router.push('/(tabs)/lists')} />
           <View style={styles.divider} />
           <MenuRow icon="📦" label="Produtos" onPress={() => router.push('/(tabs)/products')} />
-          <View style={styles.divider} />
-          <MenuRow icon="🕐" label="Histórico" onPress={() => router.push('/(tabs)/history')} />
+          {FEATURES.history ? (
+            <>
+              <View style={styles.divider} />
+              <MenuRow icon="🕐" label="Histórico" onPress={() => router.push('/(tabs)/history')} />
+            </>
+          ) : null}
         </Card>
 
+        {FEATURES.layoutConsent ? (
+          <>
         <Text style={styles.sectionLabel}>PRIVACIDADE</Text>
         <Card>
           <View style={styles.consentRow}>
@@ -209,16 +216,24 @@ export default function AccountScreen() {
             </View>
           ) : null}
         </Card>
+          </>
+        ) : null}
 
-        <View style={styles.signOutWrapper}>
-          <Button
-            label="Sair da conta"
-            variant="secondary"
-            onPress={confirmSignOut}
-            loading={signingOut}
-            fullWidth
-          />
-        </View>
+        {OFFLINE ? (
+          <Text style={styles.offlineNote}>
+            Modo offline — dados salvos só neste aparelho.
+          </Text>
+        ) : (
+          <View style={styles.signOutWrapper}>
+            <Button
+              label="Sair da conta"
+              variant="secondary"
+              onPress={confirmSignOut}
+              loading={signingOut}
+              fullWidth
+            />
+          </View>
+        )}
 
         <Text style={styles.version}>ZBuy · versão 0.6</Text>
       </ScrollView>
@@ -387,6 +402,12 @@ const styles = StyleSheet.create({
   version: {
     textAlign: 'center',
     fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: Spacing.sm,
+  },
+  offlineNote: {
+    textAlign: 'center',
+    fontSize: FontSize.sm,
     color: Colors.textSecondary,
     marginTop: Spacing.sm,
   },

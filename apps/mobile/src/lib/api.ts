@@ -1,5 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
+import { OFFLINE } from '@/constants/features';
+
 /**
  * API base URL.
  * - Android emulator → use 10.0.2.2 (maps to host machine's localhost)
@@ -43,6 +45,16 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<T> {
+  if (OFFLINE) {
+    // ponytail: import tardio evita ciclo api <-> localApi (ApiError).
+    const { handleLocalRequest } = await import('./localApi');
+    return handleLocalRequest<T>(
+      path,
+      (options.method ?? 'GET').toUpperCase(),
+      options.body as string | undefined
+    );
+  }
+
   const sessionCookie = await getSessionCookie();
 
   const headers: Record<string, string> = {
