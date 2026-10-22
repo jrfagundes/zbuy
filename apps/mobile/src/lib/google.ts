@@ -49,3 +49,35 @@ export async function signInWithGoogle(): Promise<string> {
   }
   return idToken;
 }
+
+export interface GoogleProfile {
+  id: string;
+  name: string;
+  email: string;
+}
+
+/**
+ * Login com Google 100% local: devolve o perfil da conta direto do SDK nativo,
+ * sem enviar nada ao backend. Usado no modo OFFLINE como identidade local.
+ */
+export async function signInWithGoogleProfile(): Promise<GoogleProfile> {
+  if (!isGoogleConfigured) {
+    throw new Error('Login com Google não configurado neste app.');
+  }
+  ensureConfigured();
+  await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+
+  const response = await GoogleSignin.signIn();
+  if ((response as { type?: string }).type === 'cancelled') {
+    throw new Error('cancelled');
+  }
+  const user =
+    (response as { data?: { user?: GoogleProfile } }).data?.user ??
+    (response as { user?: GoogleProfile }).user ??
+    null;
+
+  if (!user?.id || !user.email) {
+    throw new Error('Não foi possível obter o perfil do Google.');
+  }
+  return { id: user.id, name: user.name || user.email, email: user.email };
+}

@@ -1,11 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { useRouter, useSegments } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { clearSessionCookie, getSessionCookie } from '@/lib/api';
 import { OFFLINE } from '@/constants/features';
+import { OFFLINE_USER_KEY } from '@/lib/localApi';
 import { AuthUser, logout as apiLogout } from '@/lib/resources';
-
-const OFFLINE_USER: AuthUser = { id: 'local-user', name: 'Você', email: 'offline@zbuy.app' };
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -26,17 +27,25 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(OFFLINE ? OFFLINE_USER : null);
-  const [isLoading, setIsLoading] = useState(!OFFLINE);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const segments = useSegments();
 
   // On mount: the backend has no session-restore endpoint, so we can't
   // rehydrate the user object from the persisted cookie. Start logged out
   // and clear any stale cookie so the user lands on the login screen.
-  // Em modo OFFLINE não há login: entramos direto como usuário local.
   useEffect(() => {
-    if (OFFLINE) return;
+    if (OFFLINE) {
+      // Modo local: rehidrata o usuário (login Google ou "sem conta") salvo.
+      AsyncStorage.getItem(OFFLINE_USER_KEY)
+        .then((raw) => {
+          if (raw) setUser(JSON.parse(raw) as AuthUser);
+        })
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
+      return;
+    }
     getSessionCookie()
       .then((cookie) => {
         if (cookie) {
@@ -62,6 +71,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, segments]);
 
   async function signOut() {
+    if (OFFLINE) {
+      try {
+        await GoogleSignin.signOut();
+      } catch {
+        // ignore — pode não ter sessão Google ativa
+      }
+      await AsyncStorage.removeItem(OFFLINE_USER_KEY);
+      setUser(null);
+      return;
+    }
     try {
       await apiLogout();
     } catch {
@@ -73,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   function signIn(user: AuthUser) {
     setUser(user);
+    if (OFFLINE) {
+      void AsyncStorage.setItem(OFFLINE_USER_KEY, JSON.stringify(user));
+    }
   }
 
   return (

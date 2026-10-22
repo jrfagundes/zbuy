@@ -219,21 +219,21 @@ export default function AccountScreen() {
           </>
         ) : null}
 
+        <View style={styles.signOutWrapper}>
+          <Button
+            label="Sair da conta"
+            variant="secondary"
+            onPress={confirmSignOut}
+            loading={signingOut}
+            fullWidth
+          />
+        </View>
+
         {OFFLINE ? (
           <Text style={styles.offlineNote}>
-            Modo offline — dados salvos só neste aparelho.
+            Modo local — dados salvos só neste aparelho.
           </Text>
-        ) : (
-          <View style={styles.signOutWrapper}>
-            <Button
-              label="Sair da conta"
-              variant="secondary"
-              onPress={confirmSignOut}
-              loading={signingOut}
-              fullWidth
-            />
-          </View>
-        )}
+        ) : null}
 
         <Text style={styles.version}>ZBuy · versão 0.6</Text>
       </ScrollView>

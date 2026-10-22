@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
-import { isGoogleConfigured, signInWithGoogle } from '@/lib/google';
+import { OFFLINE } from '@/constants/features';
+import { isGoogleConfigured, signInWithGoogle, signInWithGoogleProfile } from '@/lib/google';
 import { loginWithGoogle, type AuthUser } from '@/lib/resources';
 
 export function GoogleButton({
@@ -24,9 +25,15 @@ export function GoogleButton({
     }
     setLoading(true);
     try {
-      const idToken = await signInWithGoogle();
-      const { user } = await loginWithGoogle(idToken);
-      onSuccess(user);
+      if (OFFLINE) {
+        // Local: identidade vem do próprio perfil Google, sem backend.
+        const profile = await signInWithGoogleProfile();
+        onSuccess(profile);
+      } else {
+        const idToken = await signInWithGoogle();
+        const { user } = await loginWithGoogle(idToken);
+        onSuccess(user);
+      }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Erro ao entrar com Google';
       // Silently ignore explicit user cancellation.

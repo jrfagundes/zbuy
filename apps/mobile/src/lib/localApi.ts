@@ -24,8 +24,9 @@ import { ApiError } from './api';
 
 const PRODUCTS_KEY = 'zbuy.offline.products';
 const LISTS_KEY = 'zbuy.offline.lists';
+export const OFFLINE_USER_KEY = 'zbuy.offline.user';
 
-const LOCAL_USER = { id: 'local-user', name: 'Você', email: 'offline@zbuy.app' };
+const DEFAULT_USER = { id: 'local-user', name: 'Você', email: 'offline@zbuy.app' };
 
 const UNITS: UnitDto[] = [
   { id: 'un', name: 'Unidade', abbreviation: 'un', type: 'count', allowsDecimals: false, sortOrder: 1 },
@@ -128,7 +129,10 @@ export async function handleLocalRequest<T>(
   const segments = path.split('/').filter(Boolean); // ex: ['shopping-lists', ':id', 'items']
 
   // --- Sessão / conta ---
-  if (path === '/me' && method === 'GET') return { user: LOCAL_USER } as T;
+  if (path === '/me' && method === 'GET') {
+    const user = await readJson(OFFLINE_USER_KEY, DEFAULT_USER);
+    return { user } as T;
+  }
   if (path === '/auth/logout') return undefined as T;
 
   // --- Units ---

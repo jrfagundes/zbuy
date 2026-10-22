@@ -14,10 +14,14 @@ export const FEATURES = {
   // Rodam local (servidas pelo localApi em modo OFFLINE).
   products: true,
   lists: true,
+  // Login com Google funciona local: o SDK nativo devolve o perfil do próprio
+  // Google; offline usamos esse perfil como identidade, sem verificar no backend.
+  google: true,
+  // E-mail/senha e cadastro precisam do backend — indisponíveis em modo OFFLINE.
+  passwordAuth: !OFFLINE,
   // Precisam de backend ao vivo — indisponíveis em modo OFFLINE.
   journeys: !OFFLINE,
   history: !OFFLINE,
   sharing: !OFFLINE,
-  remoteAuth: !OFFLINE, // login / signup / Google
   layoutConsent: !OFFLINE,
 } as const;

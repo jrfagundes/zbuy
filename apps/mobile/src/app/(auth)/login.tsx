@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,8 +15,11 @@ import { Button } from '@/components/ui/Button';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { Input } from '@/components/ui/Input';
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '@/constants/theme';
+import { FEATURES, OFFLINE } from '@/constants/features';
 import { useAuth } from '@/context/auth';
 import { login } from '@/lib/resources';
+
+const LOCAL_USER = { id: 'local-user', name: 'Você', email: 'offline@zbuy.app' };
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -61,58 +65,74 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Entrar no ZBuy</Text>
             <Text style={styles.subtitle}>
-              Acesse suas listas e organize suas compras.
+              {OFFLINE
+                ? 'Modo local — entre com o Google para usar seu nome e e-mail.'
+                : 'Acesse suas listas e organize suas compras.'}
             </Text>
           </View>
 
           {/* Form */}
           <View style={styles.form}>
-            <Input
-              label="E-mail"
-              value={email}
-              onChangeText={setEmail}
-              placeholder="seu@email.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoComplete="email"
-            />
-            <Input
-              label="Senha"
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              secureTextEntry
-              autoComplete="current-password"
-            />
+            {FEATURES.passwordAuth ? (
+              <>
+                <Input
+                  label="E-mail"
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="seu@email.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                />
+                <Input
+                  label="Senha"
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="••••••••"
+                  secureTextEntry
+                  autoComplete="current-password"
+                />
 
-            {error ? (
-              <Text style={styles.errorMessage}>{error}</Text>
+                {error ? (
+                  <Text style={styles.errorMessage}>{error}</Text>
+                ) : null}
+
+                <Button
+                  label="Entrar"
+                  onPress={handleLogin}
+                  loading={loading}
+                  fullWidth
+                  disabled={!email.trim() || !password}
+                />
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>ou</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+              </>
             ) : null}
 
-            <Button
-              label="Entrar"
-              onPress={handleLogin}
-              loading={loading}
-              fullWidth
-              disabled={!email.trim() || !password}
-            />
+            {FEATURES.google ? (
+              <GoogleButton onSuccess={signIn} label="Entrar com Google" />
+            ) : null}
 
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <GoogleButton onSuccess={signIn} label="Entrar com Google" />
+            {OFFLINE ? (
+              <Pressable onPress={() => signIn(LOCAL_USER)} hitSlop={8}>
+                <Text style={styles.ghostLink}>Entrar sem conta</Text>
+              </Pressable>
+            ) : null}
           </View>
 
           {/* Footer links */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Ainda não tem conta?</Text>
-            <Link href="/(auth)/signup" style={styles.link}>
-              Criar conta
-            </Link>
-          </View>
+          {FEATURES.passwordAuth ? (
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Ainda não tem conta?</Text>
+              <Link href="/(auth)/signup" style={styles.link}>
+                Criar conta
+              </Link>
+            </View>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -211,5 +231,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.accent,
     fontWeight: FontWeight.semibold,
+  },
+  ghostLink: {
+    textAlign: 'center',
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.medium,
+    paddingVertical: Spacing.sm,
   },
 });
