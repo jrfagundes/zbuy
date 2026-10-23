@@ -65,9 +65,8 @@ export default function LoginScreen() {
           <View style={styles.header}>
             <Text style={styles.title}>Entrar no ZBuy</Text>
             <Text style={styles.subtitle}>
-              {OFFLINE
-                ? 'Modo local — entre com o Google para usar seu nome e e-mail.'
-                : 'Acesse suas listas e organize suas compras.'}
+              Monte listas inteligentes, controle seus gastos e nunca mais
+              esqueça nada no mercado. 🛒
             </Text>
           </View>
 
